@@ -11,11 +11,7 @@
     "web/ASC.Web.Client",
     "web/ASC.Web.Editor",
     "products/ASC.People/Client",
-    "products/ASC.Files/Client",
-    "products/ASC.CRM/Client",
-    "products/ASC.Projects/Client",
-    "products/ASC.Mail/Client",
-    "products/ASC.Calendar/Client"
+    "products/ASC.Files/Client"
   ],
   "scripts": {
     "build": "lerna run build --parallel --ignore @appserver/common --ignore @appserver/components --ignore @appserver/browserslist-config-asc --ignore @appserver/debug-info",
