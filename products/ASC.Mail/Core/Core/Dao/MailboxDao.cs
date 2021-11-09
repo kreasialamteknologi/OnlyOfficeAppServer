@@ -108,6 +108,7 @@ namespace ASC.Mail.Core.Dao
         }
         public List<Mailbox> GetUniqueMailBoxes(IMailboxesExp exp)
         {
+            //group boxes by name and take with hughest id
             var query = MailDbContext.MailMailbox
                 .FromSqlRaw(
                 "SELECT m.* FROM mail_mailbox m " +
