@@ -27,6 +27,8 @@
 using System;
 using System.Runtime.Serialization;
 
+using ASC.Core.Tenants;
+
 namespace ASC.Core.Common.Settings
 {
     public interface ISettings
@@ -39,6 +41,15 @@ namespace ASC.Core.Common.Settings
     [DataContract]
     public abstract class BaseSettings<T> : ISettings where T : class, ISettings
     {
+
+        private SecurityContext SecurityContext { get; }
+        private TenantManager TenantManager { get; }
+
+        protected BaseSettings(SecurityContext securityContext, TenantManager tenantManager)
+        {
+            SecurityContext = securityContext;
+            TenantManager = tenantManager;
+        }
 
         private static int TenantID
         {

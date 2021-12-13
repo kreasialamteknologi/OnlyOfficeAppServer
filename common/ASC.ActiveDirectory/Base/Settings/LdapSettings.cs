@@ -21,6 +21,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 
 using ASC.Core;
+using ASC.Core.Common.EF.Context;
 using ASC.Core.Common.Settings;
 using ASC.Web.Core;
 
@@ -31,6 +32,10 @@ namespace ASC.ActiveDirectory.Base.Settings
     [DataContract]
     public class LdapSettings : BaseSettings<LdapSettings>, ICloneable
     {
+        Lazy<WebstudioDbContext> LazyWebstudioDbContext { get; set; }
+        WebstudioDbContext WebstudioDbContext { get => LazyWebstudioDbContext.Value; }
+        TenantDbContext TenantDbContext { get; }
+
         public override Guid ID
         {
             get { return new Guid("{197149b3-fbc9-44c2-b42a-232f7e729c16}"); }
@@ -84,6 +89,7 @@ namespace ASC.ActiveDirectory.Base.Settings
 
         public List<int> GetTenants()
         {
+            /*
             var query = new SqlQuery("webstudio_settings t1")
                 .Select("tt.id")
                 .InnerJoin("tenants_tenants tt", Exp.EqColumns("tt.id", "t1.TenantID"))
@@ -95,6 +101,17 @@ namespace ASC.ActiveDirectory.Base.Settings
             {
                 return dbManager.ExecuteList(query).ConvertAll(r => Convert.ToInt32(r[0]));
             }
+            */
+
+            var tenants = WebstudioDbContext.WebstudioSettings
+                .Where(t1 => t1.Id == ID)
+                .Join(TenantDbContext.Tenants
+                ,p => p.TenantId
+                ,z => z.Id
+                ,(p, z) => z.Id); //TODO: check original WHERE 
+
+            return tenants.ToList();
+
         }
 
         public override ISettings GetDefault(IServiceProvider serviceProvider)

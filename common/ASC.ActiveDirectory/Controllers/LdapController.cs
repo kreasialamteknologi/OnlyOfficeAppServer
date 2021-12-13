@@ -6,14 +6,17 @@ using System.Threading.Tasks;
 using System.Web;
 
 using ASC.ActiveDirectory.Base;
+using ASC.ActiveDirectory.Base.Data;
 using ASC.ActiveDirectory.Base.Settings;
 using ASC.ActiveDirectory.ComplexOperations;
 using ASC.Common.Caching;
 using ASC.Common.Threading;
 using ASC.Core;
+using ASC.Core.Billing;
 using ASC.Notify.Cron;
 using ASC.Web.Api.Routing;
 using ASC.Web.Core.PublicResources;
+using ASC.Web.Studio.Core;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -28,17 +31,20 @@ namespace ASC.ActiveDirectory.Controllers
         private new HttpContext HttpContext { get; set; }
         private SecurityContext SecurityContext { get; }
         private IServiceProvider ServiceProvider { get; }
+        private PermissionContext PermissionContext { get; }
 
         private readonly ICache Cache;
 
-        public LdapController(TenantManager tenantManager, HttpContext httpContext, SecurityContext securityContext, IServiceProvider serviceProvider, ICache cache)
+        public LdapController(TenantManager tenantManager, HttpContext httpContext, SecurityContext securityContext, IServiceProvider serviceProvider, PermissionContext permissionContext, ICache cache)
         {
             TenantManager = tenantManager;
             HttpContext = httpContext;
             SecurityContext = securityContext;
             ServiceProvider = serviceProvider;
+            PermissionContext = permissionContext;
             Cache = cache;
         }
+
 
 
 
@@ -280,7 +286,7 @@ namespace ASC.ActiveDirectory.Controllers
                     ldapSettings.SendWelcomeEmail = false;
                 }
 
-                var ldapLocalization = new LdapLocalization(Resource.ResourceManager, ASC.Web.Studio.Core.Notify.WebstudioNotifyPatternResource.ResourceManager);
+                var ldapLocalization = new LdapLocalization(Resource.ResourceManager, WebstudioNotifyPatternResource.ResourceManager);
 
                 var tenant = TenantManager.GetCurrentTenant();
 
@@ -421,16 +427,17 @@ namespace ASC.ActiveDirectory.Controllers
                 };
 
                 if (!(string.IsNullOrEmpty(result.Warning)))
-                {
+                { 
                     operation.SetProperty(LdapOperation.WARNING, ""); // "mark" as read
                 }
 
                 return result;
             }
 
-            private static void CheckLdapPermissions()
+            private void CheckLdapPermissions()
             {
-                SecurityContext.DemandPermissions(SecutiryConstants.EditPortalSettings);
+            
+                PermissionContext.DemandPermissions(SecutiryConstants.EditPortalSettings);
 
                 if (!CoreContext.Configuration.Standalone
                     && (!SetupInfo.IsVisibleSettings(ManagementType.LdapSettings.ToString())
