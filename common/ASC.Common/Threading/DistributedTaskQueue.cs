@@ -114,6 +114,7 @@ namespace ASC.Common.Threading
         private DistributedTaskCacheNotify DistributedTaskCacheNotify { get; }
         public IServiceProvider ServiceProvider { get; }
 
+
         public ConfigureDistributedTaskQueue(DistributedTaskCacheNotify distributedTaskCacheNotify, IServiceProvider serviceProvider)
         {
             DistributedTaskCacheNotify = distributedTaskCacheNotify;
@@ -145,6 +146,8 @@ namespace ASC.Common.Threading
         private ICache Cache { get => DistributedTaskCacheNotify.Cache; }
         private ConcurrentDictionary<string, CancellationTokenSource> Cancelations { get => DistributedTaskCacheNotify.Cancelations; }
 
+        private ICacheNotify<DistributedTaskCancelation> notify;
+
         public int MaxThreadsCount
         {
             set
@@ -162,6 +165,32 @@ namespace ASC.Common.Threading
             InstanceId = Process.GetCurrentProcess().Id;
         }
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        /// <param name="name">Name of queue</param>
+        /// <param name="maxThreadsCount">limit of threads count; Default: -1 - no limit</param>
+        public DistributedTaskQueue(string name, int maxThreadsCount = -1)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentNullException("name");
+            }
+
+            key = name + GetType().Name;
+            Scheduler = maxThreadsCount <= 0
+                ? TaskScheduler.Default
+                : throw new ArgumentOutOfRangeException("maxDegreeOfParallelism"); // TODO: was LimitedConcurrencyLevelTaskScheduler
+
+            notify.Subscribe<DistributedTaskCancelation>((c, a) =>
+            {
+                CancellationTokenSource s;
+                if (cancelations.TryGetValue(c.Id, out s))
+                {
+                    s.Cancel();
+                }
+            });
+        }
 
         public void QueueTask(DistributedTaskProgress taskProgress)
         {

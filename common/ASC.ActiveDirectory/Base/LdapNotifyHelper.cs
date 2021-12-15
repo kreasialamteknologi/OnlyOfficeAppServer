@@ -36,6 +36,7 @@ namespace ASC.ActiveDirectory.Base
     {
         private static readonly Dictionary<int, Tuple<INotifyClient, LdapNotifySource>> clients;
         private static readonly DistributedTaskQueue ldapTasks;
+        private static TenantManager TenantManager;
 
         private static IContainer Builder { get; set; }
         private static INotifySource studioNotify;
@@ -75,7 +76,7 @@ namespace ASC.ActiveDirectory.Base
         {
             var task = new Task(() =>
             {
-                var tenants = CoreContext.TenantManager.GetTenants(new LdapSettings().GetTenants());
+                var tenants =  TenantManager.GetTenants(new LdapSettings().GetTenants());
                 foreach (var t in tenants)
                 {
                     var tId = t.TenantId;

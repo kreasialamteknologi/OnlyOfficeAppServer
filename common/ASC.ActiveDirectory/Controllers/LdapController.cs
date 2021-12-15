@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web;
+﻿using System.Web;
 
 using ASC.ActiveDirectory.Base;
 using ASC.ActiveDirectory.Base.Data;
@@ -17,6 +12,7 @@ using ASC.Notify.Cron;
 using ASC.Web.Api.Routing;
 using ASC.Web.Core.PublicResources;
 using ASC.Web.Studio.Core;
+using ASC.Web.Studio.Utility;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,18 +28,25 @@ namespace ASC.ActiveDirectory.Controllers
         private SecurityContext SecurityContext { get; }
         private IServiceProvider ServiceProvider { get; }
         private PermissionContext PermissionContext { get; }
+        protected CoreBaseSettings CoreBaseSettings { get; }
+
+        private DistributedTaskQueue DistributedTaskQueue { get; }
 
         private readonly ICache Cache;
 
-        public LdapController(TenantManager tenantManager, HttpContext httpContext, SecurityContext securityContext, IServiceProvider serviceProvider, PermissionContext permissionContext, ICache cache)
+        public LdapController(TenantManager tenantManager, HttpContext httpContext, SecurityContext securityContext, 
+            IServiceProvider serviceProvider, PermissionContext permissionContext, CoreBaseSettings coreBaseSettings, ICache cache)
         {
             TenantManager = tenantManager;
             HttpContext = httpContext;
             SecurityContext = securityContext;
             ServiceProvider = serviceProvider;
             PermissionContext = permissionContext;
+            CoreBaseSettings = coreBaseSettings;
             Cache = cache;
         }
+
+
 
 
 
@@ -163,7 +166,7 @@ namespace ASC.ActiveDirectory.Controllers
             {
                 CheckLdapPermissions();
 
-                var operations = LDAPTasks.GetTasks()
+                var operations = DistributedTaskQueue.GetTasks()
                     .Where(t => t.GetProperty<int>(LdapOperation.OWNER) == TenantManager.GetCurrentTenant().TenantId)
                     .ToList();
 
@@ -211,7 +214,7 @@ namespace ASC.ActiveDirectory.Controllers
             {
                 CheckLdapPermissions();
 
-                var operations = LDAPTasks.GetTasks()
+                var operations = DistributedTaskQueue.GetTasks()
                     .Where(t => t.GetProperty<int>(LdapOperation.OWNER) == TenantManager.GetCurrentTenant().TenantId)
                     .ToList();
 
@@ -261,7 +264,7 @@ namespace ASC.ActiveDirectory.Controllers
             {
                 CheckLdapPermissions();
 
-                var operations = LDAPTasks.GetTasks()
+                var operations = DistributedTaskQueue.GetTasks()
                     .Where(t => t.GetProperty<int>(LdapOperation.OWNER) == TenantManager.GetCurrentTenant().TenantId).ToList();
 
                 if (operations.Any(o => o.Status <= DistributedTaskStatus.Running))
@@ -312,7 +315,7 @@ namespace ASC.ActiveDirectory.Controllers
             {
                 CheckLdapPermissions();
 
-                var operations = LDAPTasks.GetTasks()
+                var operations = DistributedTaskQueue.GetTasks()
                     .Where(t => t.GetProperty<int>(LdapOperation.OWNER) == TenantManager.GetCurrentTenant().TenantId)
                     .ToList();
 
@@ -383,7 +386,7 @@ namespace ASC.ActiveDirectory.Controllers
 
             private static LdapOperationStatus ToLdapOperationStatus()
             {
-                var operations = LDAPTasks.GetTasks().ToList();
+                var operations = DistributedTaskQueue.GetTasks().ToList();
 
                 foreach (var o in operations)
                 {
@@ -392,7 +395,7 @@ namespace ASC.ActiveDirectory.Controllers
                         continue;
 
                     o.SetProperty(LdapOperation.PROGRESS, 100);
-                    LDAPTasks.RemoveTask(o.Id);
+                    DistributedTaskQueue.RemoveTask(o.Id);
                 }
 
                 var operation =
@@ -407,7 +410,7 @@ namespace ASC.ActiveDirectory.Controllers
                 if (DistributedTaskStatus.Running < operation.Status)
                 {
                     operation.SetProperty(LdapOperation.PROGRESS, 100);
-                    LDAPTasks.RemoveTask(operation.Id);
+                    DistributedTaskQueue.RemoveTask(operation.Id);
                 }
 
                 var certificateConfirmRequest = operation.GetProperty<LdapCertificateConfirmRequest>(LdapOperation.CERT_REQUEST);
@@ -439,7 +442,7 @@ namespace ASC.ActiveDirectory.Controllers
             
                 PermissionContext.DemandPermissions(SecutiryConstants.EditPortalSettings);
 
-                if (!CoreContext.Configuration.Standalone
+                if (!CoreBaseSettings.Standalone
                     && (!SetupInfo.IsVisibleSettings(ManagementType.LdapSettings.ToString())
                         || !TenantManager.GetTenantQuota(TenantManager.GetCurrentTenant().TenantId).Ldap))
                 {
@@ -449,7 +452,7 @@ namespace ASC.ActiveDirectory.Controllers
 
             private LdapOperationStatus QueueTask(LdapOperation op)
             {
-                LDAPTasks.QueueTask(op.RunJob, op.GetDistributedTask());
+                DistributedTaskQueue.QueueTask(op.RunJob, op.GetDistributedTask());
                 return ToLdapOperationStatus();
             }
 

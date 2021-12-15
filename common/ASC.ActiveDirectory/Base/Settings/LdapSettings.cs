@@ -30,13 +30,13 @@ namespace ASC.ActiveDirectory.Base.Settings
 
     [Serializable]
     [DataContract]
-    public class LdapSettings : BaseSettings<LdapSettings>, ICloneable
+    public class LdapSettings : ISettings , ICloneable
     {
         Lazy<WebstudioDbContext> LazyWebstudioDbContext { get; set; }
         WebstudioDbContext WebstudioDbContext { get => LazyWebstudioDbContext.Value; }
         TenantDbContext TenantDbContext { get; }
 
-        public override Guid ID
+        public Guid ID
         {
             get { return new Guid("{197149b3-fbc9-44c2-b42a-232f7e729c16}"); }
         }
@@ -114,7 +114,7 @@ namespace ASC.ActiveDirectory.Base.Settings
 
         }
 
-        public override ISettings GetDefault(IServiceProvider serviceProvider)
+        public ISettings GetDefault(IServiceProvider serviceProvider)
         {
             var isMono = WorkContext.IsMono;
 
@@ -428,14 +428,14 @@ namespace ASC.ActiveDirectory.Base.Settings
 
     [Serializable]
     [DataContract]
-    public class LdapCronSettings : BaseSettings<LdapCronSettings>
+    public class LdapCronSettings : ISettings
     {
-        public override Guid ID
+        public Guid ID
         {
             get { return new Guid("{58C42C54-56CD-4BEF-A3ED-C60ACCF6E975}"); }
         }
 
-        public override ISettings GetDefault(IServiceProvider serviceProvider)
+        public ISettings GetDefault(IServiceProvider serviceProvider)
         {
             return new LdapCronSettings()
             {
@@ -449,14 +449,14 @@ namespace ASC.ActiveDirectory.Base.Settings
 
     [Serializable]
     [DataContract]
-    public class LdapCurrentAcccessSettings : BaseSettings<LdapCurrentAcccessSettings>
+    public class LdapCurrentAcccessSettings : ISettings
     {
-        public override Guid ID
+        public Guid ID
         {
             get { return new Guid("{134B5EAA-F612-4834-AEAB-34C90515EA4E}"); }
         }
 
-        public override ISettings GetDefault(IServiceProvider serviceProvider)
+        public ISettings GetDefault(IServiceProvider serviceProvider)
         {
             return new LdapCurrentAcccessSettings() { CurrentAccessRights = null };
         }
@@ -472,14 +472,14 @@ namespace ASC.ActiveDirectory.Base.Settings
 
     [Serializable]
     [DataContract]
-    public class LdapCurrentUserPhotos : BaseSettings<LdapCurrentUserPhotos>
+    public class LdapCurrentUserPhotos : ISettings
     {
-        public override Guid ID
+        public Guid ID
         {
             get { return new Guid("{50AE3C2B-0783-480F-AF30-679D0F0A2D3E}"); }
         }
 
-        public override ISettings GetDefault(IServiceProvider serviceProvider)
+        public ISettings GetDefault(IServiceProvider serviceProvider)
         {
             return new LdapCurrentUserPhotos() { CurrentPhotos = null };
         }
@@ -495,14 +495,14 @@ namespace ASC.ActiveDirectory.Base.Settings
 
     [Serializable]
     [DataContract]
-    public class LdapCurrentDomain : BaseSettings<LdapCurrentDomain>
+    public class LdapCurrentDomain : ISettings
     {
-        public override Guid ID
+        public Guid ID
         {
             get { return new Guid("{75A5F745-F697-4418-B38D-0FE0D277E258}"); }
         }
 
-        public override ISettings GetDefault(IServiceProvider serviceProvider)
+        public ISettings GetDefault(IServiceProvider serviceProvider)
         {
             return new LdapCurrentDomain() { CurrentDomain = null };
         }
