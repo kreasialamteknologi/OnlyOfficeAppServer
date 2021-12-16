@@ -23,26 +23,26 @@
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
     <ROW Property="ServiceName_Apache_Kafka" Value="Apache Kafka"/>
     <ROW Property="ServiceName_Apache_ZooKeeper" Value="Apache ZooKeeper"/>
-    <ROW Property="ServiceName_OnlyofficeApiSystemService" Value="OnlyofficeApiSystemService"/>
-    <ROW Property="ServiceName_OnlyofficeBackupService" Value="OnlyofficeBackupService"/>
-    <ROW Property="ServiceName_OnlyofficeCalendarServer" Value="OnlyofficeCalendarServer"/>
-    <ROW Property="ServiceName_OnlyofficeCrmServer" Value="OnlyofficeCrmServer"/>
-    <ROW Property="ServiceName_OnlyofficeEncryptionService" Value="OnlyofficeEncryptionService"/>
-    <ROW Property="ServiceName_OnlyofficeFileServer" Value="OnlyofficeFileServer"/>
-    <ROW Property="ServiceName_OnlyofficeFileService" Value="OnlyofficeFileService"/>
-    <ROW Property="ServiceName_OnlyofficeMailServer" Value="OnlyofficeMailServer"/>
-    <ROW Property="ServiceName_OnlyofficeMigrationService" Value="OnlyofficeMigrationService"/>
-    <ROW Property="ServiceName_OnlyofficeNotifyService" Value="OnlyofficeNotifyService"/>
-    <ROW Property="ServiceName_OnlyofficePeopleServer" Value="OnlyofficePeopleServer"/>
-    <ROW Property="ServiceName_OnlyofficeProjectsServer" Value="OnlyofficeProjectsServer"/>
-    <ROW Property="ServiceName_OnlyofficeProxy" Value="OnlyofficeProxy"/>
-    <ROW Property="ServiceName_OnlyofficeSocket.IO" Value="OnlyofficeSocket.IO"/>
-    <ROW Property="ServiceName_OnlyofficeStudioNotifyService" Value="OnlyofficeStudioNotifyService"/>
-    <ROW Property="ServiceName_OnlyofficeTelegramService" Value="OnlyofficeTelegramService"/>
-    <ROW Property="ServiceName_OnlyofficeThumbnails" Value="OnlyofficeThumbnails"/>
-    <ROW Property="ServiceName_OnlyofficeUrlShortenerService" Value="OnlyofficeUrlShortenerService"/>
-    <ROW Property="ServiceName_OnlyofficeWebApi" Value="OnlyofficeWebApi"/>
-    <ROW Property="ServiceName_OnlyofficeWebStudio" Value="OnlyofficeWebStudio"/>
+    <ROW Property="ServiceName_OnlyofficeApiSystemService" Value="ASC.ApiSystemService"/>
+    <ROW Property="ServiceName_OnlyofficeBackupService" Value="ASC.BackupService"/>
+    <ROW Property="ServiceName_OnlyofficeCalendarServer" Value="ASC.CalendarServer"/>
+    <ROW Property="ServiceName_OnlyofficeCrmServer" Value="ASC.CrmServer"/>
+    <ROW Property="ServiceName_OnlyofficeEncryptionService" Value="ASC.EncryptionService"/>
+    <ROW Property="ServiceName_OnlyofficeFileServer" Value="ASC.FileServer"/>
+    <ROW Property="ServiceName_OnlyofficeFileService" Value="ASC.FileService"/>
+    <ROW Property="ServiceName_OnlyofficeMailServer" Value="ASC.MailServer"/>
+    <ROW Property="ServiceName_OnlyofficeMigrationService" Value="ASC.MigrationService"/>
+    <ROW Property="ServiceName_OnlyofficeNotifyService" Value="ASC.NotifyService"/>
+    <ROW Property="ServiceName_OnlyofficePeopleServer" Value="ASC.PeopleServer"/>
+    <ROW Property="ServiceName_OnlyofficeProjectsServer" Value="ASC.ProjectsServer"/>
+    <ROW Property="ServiceName_OnlyofficeProxy" Value="ASC.Proxy"/>
+    <ROW Property="ServiceName_OnlyofficeSocket.IO" Value="ASC.Socket.IO"/>
+    <ROW Property="ServiceName_OnlyofficeStudioNotifyService" Value="ASC.StudioNotifyService"/>
+    <ROW Property="ServiceName_OnlyofficeTelegramService" Value="ASC.TelegramService"/>
+    <ROW Property="ServiceName_OnlyofficeThumbnails" Value="ASC.Thumbnails"/>
+    <ROW Property="ServiceName_OnlyofficeUrlShortenerService" Value="ASC.UrlShortenerService"/>
+    <ROW Property="ServiceName_OnlyofficeWebApi" Value="ASC.WebApi"/>
+    <ROW Property="ServiceName_OnlyofficeWebStudio" Value="ASC.WebStudio"/>
     <ROW Property="USERNAME_PROP" Value="root"/>
     <ROW Property="UpgradeCode" Value="{FFA9CD16-E087-45F3-8D34-3BBA1EF8A897}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
