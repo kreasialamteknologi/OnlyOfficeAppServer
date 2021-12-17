@@ -35,6 +35,7 @@ namespace ASC.ActiveDirectory.Base.Settings
         Lazy<WebstudioDbContext> LazyWebstudioDbContext { get; set; }
         WebstudioDbContext WebstudioDbContext { get => LazyWebstudioDbContext.Value; }
         TenantDbContext TenantDbContext { get; }
+        private static SettingsManager SettingsManager  { get; }
 
         public Guid ID
         {
@@ -158,7 +159,7 @@ namespace ASC.ActiveDirectory.Base.Settings
             return settings;
         }
 
-        public static List<MappingFields> GetImportedFields { get { return Load().LdapMapping.Keys.ToList(); } }
+        public static List<MappingFields> GetImportedFields { get { return SettingsManager.Load<LdapSettings>().LdapMapping.Keys.ToList(); } }
 
         public override bool Equals(object obj)
         {
@@ -442,6 +443,7 @@ namespace ASC.ActiveDirectory.Base.Settings
                 Cron = null
             };
         }
+
 
         [DataMember]
         public string Cron { get; set; }

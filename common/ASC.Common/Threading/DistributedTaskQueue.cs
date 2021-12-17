@@ -148,6 +148,8 @@ namespace ASC.Common.Threading
 
         private ICacheNotify<DistributedTaskCancelation> notify;
 
+        private static readonly ConcurrentDictionary<string, CancellationTokenSource> cancelations = new ConcurrentDictionary<string, CancellationTokenSource>();
+
         public int MaxThreadsCount
         {
             set
@@ -182,14 +184,14 @@ namespace ASC.Common.Threading
                 ? TaskScheduler.Default
                 : throw new ArgumentOutOfRangeException("maxDegreeOfParallelism"); // TODO: was LimitedConcurrencyLevelTaskScheduler
 
-            notify.Subscribe<DistributedTaskCancelation>((c, a) =>
+            notify.Subscribe((c) =>
             {
                 CancellationTokenSource s;
                 if (cancelations.TryGetValue(c.Id, out s))
                 {
                     s.Cancel();
                 }
-            });
+            }, CacheNotifyAction.InsertOrUpdate);
         }
 
         public void QueueTask(DistributedTaskProgress taskProgress)

@@ -1,4 +1,5 @@
-﻿using System.Web;
+﻿using System.Diagnostics;
+using System.Web;
 
 using ASC.ActiveDirectory.Base;
 using ASC.ActiveDirectory.Base.Data;
@@ -8,6 +9,7 @@ using ASC.Common.Caching;
 using ASC.Common.Threading;
 using ASC.Core;
 using ASC.Core.Billing;
+using ASC.Core.Common.Settings;
 using ASC.Notify.Cron;
 using ASC.Web.Api.Routing;
 using ASC.Web.Core.PublicResources;
@@ -23,19 +25,19 @@ namespace ASC.ActiveDirectory.Controllers
 {
     internal class LdapController : ControllerBase
     {
-        private TenantManager TenantManager { get; }
+        private static TenantManager TenantManager { get; set; }
         private new HttpContext HttpContext { get; set; }
         private SecurityContext SecurityContext { get; }
         private IServiceProvider ServiceProvider { get; }
         private PermissionContext PermissionContext { get; }
         protected CoreBaseSettings CoreBaseSettings { get; }
+        private SettingsManager SettingsManager { get; }
 
-        private DistributedTaskQueue DistributedTaskQueue { get; }
+        private static readonly DistributedTaskQueue ldapTasks = new DistributedTaskQueue("ldapOperations");
 
         private readonly ICache Cache;
 
-        public LdapController(TenantManager tenantManager, HttpContext httpContext, SecurityContext securityContext, 
-            IServiceProvider serviceProvider, PermissionContext permissionContext, CoreBaseSettings coreBaseSettings, ICache cache)
+        public LdapController(TenantManager tenantManager, HttpContext httpContext, SecurityContext securityContext, IServiceProvider serviceProvider, PermissionContext permissionContext, CoreBaseSettings coreBaseSettings, SettingsManager settingsManager, DistributedTaskQueue distributedTaskQueue, ICache cache)
         {
             TenantManager = tenantManager;
             HttpContext = httpContext;
@@ -43,10 +45,9 @@ namespace ASC.ActiveDirectory.Controllers
             ServiceProvider = serviceProvider;
             PermissionContext = permissionContext;
             CoreBaseSettings = coreBaseSettings;
+            SettingsManager = settingsManager;
             Cache = cache;
         }
-
-
 
 
 
@@ -65,7 +66,7 @@ namespace ASC.ActiveDirectory.Controllers
             {
                 CheckLdapPermissions();
 
-                var settings = LdapSettings.Load();
+                var settings = SettingsManager.Load<LdapSettings>();
 
                 settings = settings.Clone() as LdapSettings; // clone LdapSettings object for clear password (potencial AscCache.Memory issue)
 
@@ -99,7 +100,7 @@ namespace ASC.ActiveDirectory.Controllers
             {
                 CheckLdapPermissions();
 
-                var settings = LdapCronSettings.Load();
+                var settings = SettingsManager.Load<LdapCronSettings>();
 
                 if (settings == null)
                     settings = new LdapCronSettings().GetDefault(ServiceProvider) as LdapCronSettings;
@@ -126,20 +127,20 @@ namespace ASC.ActiveDirectory.Controllers
                 if (!string.IsNullOrEmpty(cron))
                 {
                     new CronExpression(cron); // validate
-
-                    if (!LdapSettings.Load().EnableLdapAuthentication)
+                    
+                    if (!SettingsManager.Load<LdapSettings>().EnableLdapAuthentication)
                     {
                         throw new Exception(Resource.LdapSettingsErrorCantSaveLdapSettings);
                     }
                 }
 
-                var settings = LdapCronSettings.Load();
+                var settings = SettingsManager.Load<LdapCronSettings>();
 
                 if (settings == null)
                     settings = new LdapCronSettings();
 
                 settings.Cron = cron;
-                settings.Save();
+                SettingsManager.Save(settings);
 
                 var t = TenantManager.GetCurrentTenant();
                 if (!string.IsNullOrEmpty(cron))
@@ -165,8 +166,8 @@ namespace ASC.ActiveDirectory.Controllers
             public LdapOperationStatus SyncLdap()
             {
                 CheckLdapPermissions();
-
-                var operations = DistributedTaskQueue.GetTasks()
+                
+                var operations = ldapTasks.GetTasks()
                     .Where(t => t.GetProperty<int>(LdapOperation.OWNER) == TenantManager.GetCurrentTenant().TenantId)
                     .ToList();
 
@@ -188,7 +189,7 @@ namespace ASC.ActiveDirectory.Controllers
                     return GetStartProcessError();
                 }
 
-                var ldapSettings = LdapSettings.Load();
+                var ldapSettings = SettingsManager.Load<LdapSettings>();
 
                 var ldapLocalization = new LdapLocalization(Resource.ResourceManager);
 
@@ -214,7 +215,7 @@ namespace ASC.ActiveDirectory.Controllers
             {
                 CheckLdapPermissions();
 
-                var operations = DistributedTaskQueue.GetTasks()
+                var operations = ldapTasks.GetTasks()
                     .Where(t => t.GetProperty<int>(LdapOperation.OWNER) == TenantManager.GetCurrentTenant().TenantId)
                     .ToList();
 
@@ -236,7 +237,7 @@ namespace ASC.ActiveDirectory.Controllers
                     return GetStartProcessError();
                 }
 
-                var ldapSettings = LdapSettings.Load();
+                var ldapSettings = SettingsManager.Load<LdapSettings>();
 
                 var ldapLocalization = new LdapLocalization(Resource.ResourceManager);
 
@@ -264,7 +265,7 @@ namespace ASC.ActiveDirectory.Controllers
             {
                 CheckLdapPermissions();
 
-                var operations = DistributedTaskQueue.GetTasks()
+                var operations = ldapTasks.GetTasks()
                     .Where(t => t.GetProperty<int>(LdapOperation.OWNER) == TenantManager.GetCurrentTenant().TenantId).ToList();
 
                 if (operations.Any(o => o.Status <= DistributedTaskStatus.Running))
@@ -315,7 +316,7 @@ namespace ASC.ActiveDirectory.Controllers
             {
                 CheckLdapPermissions();
 
-                var operations = DistributedTaskQueue.GetTasks()
+                var operations = ldapTasks.GetTasks()
                     .Where(t => t.GetProperty<int>(LdapOperation.OWNER) == TenantManager.GetCurrentTenant().TenantId)
                     .ToList();
 
@@ -386,16 +387,16 @@ namespace ASC.ActiveDirectory.Controllers
 
             private static LdapOperationStatus ToLdapOperationStatus()
             {
-                var operations = DistributedTaskQueue.GetTasks().ToList();
+                var operations = ldapTasks.GetTasks().ToList();
 
                 foreach (var o in operations)
                 {
-                    if (!string.IsNullOrEmpty(o.InstanseId) &&
-                        Process.GetProcesses().Any(p => p.Id == int.Parse(o.InstanseId)))
+                    if (!string.IsNullOrEmpty(o.InstanceId.ToString()) &&
+                        Process.GetProcesses().Any(p => p.Id == o.InstanceId))
                         continue;
 
                     o.SetProperty(LdapOperation.PROGRESS, 100);
-                    DistributedTaskQueue.RemoveTask(o.Id);
+                    ldapTasks.RemoveTask(o.Id);
                 }
 
                 var operation =
@@ -410,7 +411,7 @@ namespace ASC.ActiveDirectory.Controllers
                 if (DistributedTaskStatus.Running < operation.Status)
                 {
                     operation.SetProperty(LdapOperation.PROGRESS, 100);
-                    DistributedTaskQueue.RemoveTask(operation.Id);
+                    ldapTasks.RemoveTask(operation.Id);
                 }
 
                 var certificateConfirmRequest = operation.GetProperty<LdapCertificateConfirmRequest>(LdapOperation.CERT_REQUEST);
@@ -452,7 +453,7 @@ namespace ASC.ActiveDirectory.Controllers
 
             private LdapOperationStatus QueueTask(LdapOperation op)
             {
-                DistributedTaskQueue.QueueTask(op.RunJob, op.GetDistributedTask());
+                ldapTasks.QueueTask(op.RunJob, op.GetDistributedTask());
                 return ToLdapOperationStatus();
             }
 

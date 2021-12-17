@@ -24,11 +24,14 @@ using ASC.ActiveDirectory.ComplexOperations;
 using ASC.Common.DependencyInjection;
 using ASC.Common.Threading;
 using ASC.Core;
+using ASC.Core.Common.Settings;
 using ASC.Core.Tenants;
 using ASC.Notify;
 using ASC.Notify.Model;
 
 using Autofac;
+
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ASC.ActiveDirectory.Base
 {
@@ -37,10 +40,11 @@ namespace ASC.ActiveDirectory.Base
         private static readonly Dictionary<int, Tuple<INotifyClient, LdapNotifySource>> clients;
         private static readonly DistributedTaskQueue ldapTasks;
         private static TenantManager TenantManager;
-
+        private static SettingsManager SettingsManager;
         private static IContainer Builder { get; set; }
         private static INotifySource studioNotify;
         private static INotifyClient notifyClient;
+        private static IServiceProvider _serviceProvider;
 
         public static INotifyClient StudioNotifyClient
         {
@@ -51,9 +55,11 @@ namespace ASC.ActiveDirectory.Base
                     studioNotify = Builder.Resolve<INotifySource>();
                 }
 
+                using var scope = _serviceProvider.CreateScope();
+
                 if (notifyClient == null)
                 {
-                    notifyClient = WorkContext.NotifyContext.NotifyService.RegisterClient(studioNotify);
+                    notifyClient = WorkContext.NotifyContext.NotifyService.RegisterClient(studioNotify, scope);
                 }
 
                 return notifyClient;
@@ -62,11 +68,14 @@ namespace ASC.ActiveDirectory.Base
 
         static LdapNotifyHelper()
         {
+            /*
             var container = AutofacConfigLoader.Load("ldap");
             if (container != null)
             {
                 Builder = container.Build();
             }
+            */
+            //TODO: change AutofacConfigLoader
 
             clients = new Dictionary<int, Tuple<INotifyClient, LdapNotifySource>>();
             ldapTasks = new DistributedTaskQueue("ldapAutoSyncOperations");
@@ -81,10 +90,11 @@ namespace ASC.ActiveDirectory.Base
                 {
                     var tId = t.TenantId;
 
-                    var ldapSettings = LdapSettings.LoadForTenant(tId);
+                    var ldapSettings = SettingsManager.LoadForTenant<LdapSettings>(tId);
+                    
                     if (!ldapSettings.EnableLdapAuthentication) continue;
 
-                    var cronSettings = LdapCronSettings.LoadForTenant(tId);
+                    var cronSettings = SettingsManager.LoadForTenant<LdapCronSettings>(tId);
                     if (string.IsNullOrEmpty(cronSettings.Cron)) continue;
 
                     RegisterAutoSync(t, cronSettings.Cron);
@@ -99,8 +109,9 @@ namespace ASC.ActiveDirectory.Base
             if (!clients.ContainsKey(tenant.TenantId))
             {
                 var source = new LdapNotifySource(tenant);
-                var client = WorkContext.NotifyContext.NotifyService.RegisterClient(source);
-                client.RegisterSendMethod(source.AutoSync, cron);
+                using var scope = _serviceProvider.CreateScope();
+                var client = WorkContext.NotifyContext.NotifyService.RegisterClient(source, scope);
+                //client.RegisterSendMethod(source.AutoSync, cron); //TODO: no this method
                 clients.Add(tenant.TenantId, new Tuple<INotifyClient, LdapNotifySource>(client, source));
             }
         }
@@ -110,20 +121,21 @@ namespace ASC.ActiveDirectory.Base
             if (clients.ContainsKey(tenant.TenantId))
             {
                 var client = clients[tenant.TenantId];
-                client.Item1.UnregisterSendMethod(client.Item2.AutoSync);
+                //client.Item1.UnregisterSendMethod(client.Item2.AutoSync); //TODO: no this method
                 clients.Remove(tenant.TenantId);
             }
         }
 
         public static void AutoSync(Tenant tenant)
         {
-            var ldapSettings = LdapSettings.LoadForTenant(tenant.TenantId);
+
+            var ldapSettings = SettingsManager.LoadForTenant<LdapSettings>(tenant.TenantId);
 
             if (!ldapSettings.EnableLdapAuthentication)
             {
-                var cronSettings = LdapCronSettings.LoadForTenant(tenant.TenantId);
+                var cronSettings = SettingsManager.LoadForTenant<LdapCronSettings>(tenant.TenantId);
                 cronSettings.Cron = "";
-                cronSettings.SaveForTenant(tenant.TenantId);
+                SettingsManager.SaveForTenant(cronSettings, tenant.TenantId);
                 UnregisterAutoSync(tenant);
                 return;
             }

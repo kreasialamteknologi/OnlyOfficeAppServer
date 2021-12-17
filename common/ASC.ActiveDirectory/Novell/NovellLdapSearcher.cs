@@ -34,6 +34,7 @@ using Novell.Directory.Ldap;
 using Novell.Directory.Ldap.Controls;
 using Novell.Directory.Ldap.Utilclass;
 
+
 namespace ASC.ActiveDirectory.Novell
 {
     public class NovellLdapSearcher : IDisposable
@@ -197,9 +198,9 @@ namespace ASC.ActiveDirectory.Novell
 
         public enum LdapScope
         {
-            Base = LdapConnection.SCOPE_BASE,
-            One = LdapConnection.SCOPE_ONE,
-            Sub = LdapConnection.SCOPE_SUB
+            Base = LdapConnection.ScopeBase,
+            One = LdapConnection.ScopeOne,
+            Sub = LdapConnection.ScopeSub
         }
 
         public List<LdapObject> Search(LdapScope scope, string searchFilter,
@@ -480,7 +481,7 @@ namespace ASC.ActiveDirectory.Novell
                     ReferralFollowing = true
                 };
 
-                var ldapSearchResults = _ldapConnection.Search("", LdapConnection.SCOPE_BASE, LdapConstants.OBJECT_FILTER,
+                var ldapSearchResults = _ldapConnection.Search("", LdapConnection.ScopeBase, LdapConstants.OBJECT_FILTER,
                     new[] { "*", "supportedControls", "supportedCapabilities" }, false, ldapSearchConstraints);
 
                 while (ldapSearchResults.hasMore())

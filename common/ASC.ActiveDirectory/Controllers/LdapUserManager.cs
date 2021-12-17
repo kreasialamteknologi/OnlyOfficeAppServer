@@ -29,11 +29,13 @@ using ASC.ActiveDirectory.ComplexOperations.Data;
 using ASC.ActiveDirectory.Novell;
 using ASC.Common.Logging;
 using ASC.Core;
+using ASC.Core.Common.Settings;
 using ASC.Core.Tenants;
 using ASC.Core.Users;
 using ASC.Notify.Patterns;
 using ASC.Notify.Recipients;
 using ASC.Web.Core;
+using ASC.Web.Core.Users;
 using ASC.Web.Studio.Utility;
 
 using Mapping = ASC.ActiveDirectory.Base.Settings.LdapSettings.MappingFields;
@@ -42,18 +44,26 @@ namespace ASC.ActiveDirectory
 {
     public class LdapUserManager
     {
-        private readonly ILog _log = LogManager.GetLogger("ASC");
-
+        private readonly ILog _log;
+        private static UserManager UserManager { get; }
+        private TenantManager TenantManager { get; set;  }
         public LdapLocalization Resource { get; private set; }
-
+        private SecurityContext SecurityContext { get; }
+        private SettingsManager SettingsManager { get; set; }
+        private CookiesManager CookiesManager { get; set; }
+        private TenantUtil TenantUtil { get; set; }
+        private CommonLinkUtility CommonLinkUtility { get; set; }
+        private DisplayUserSettingsHelper DisplayUserSettingsHelper { get; }
         public LdapUserManager(LdapLocalization resource = null)
         {
             Resource = resource ?? new LdapLocalization();
         }
 
+
+
         private static bool TestUniqueUserName(string uniqueName)
         {
-            return !string.IsNullOrEmpty(uniqueName) && Equals(CoreContext.UserManager.GetUserByUserName(uniqueName), Constants.LostUser);
+            return !string.IsNullOrEmpty(uniqueName) && Equals(UserManager.GetUserByUserName(uniqueName), Constants.LostUser);
         }
 
         private string MakeUniqueName(UserInfo userInfo)
@@ -73,7 +83,7 @@ namespace ASC.ActiveDirectory
 
         private static bool CheckUniqueEmail(Guid userId, string email)
         {
-            var foundUser = CoreContext.UserManager.GetUserByEmail(email);
+            var foundUser = UserManager.GetUserByEmail(email);
             return Equals(foundUser, Constants.LostUser) || foundUser.ID == userId;
         }
 
@@ -105,8 +115,8 @@ namespace ASC.ActiveDirectory
                     return false;
                 }
 
-                var q = CoreContext.TenantManager.GetTenantQuota(CoreContext.TenantManager.GetCurrentTenant().TenantId);
-                if (q.ActiveUsers <= CoreContext.UserManager.GetUsersByGroup(Constants.GroupUser.ID).Length)
+                var q = TenantManager.GetTenantQuota(TenantManager.GetCurrentTenant().TenantId);
+                if (q.ActiveUsers <= UserManager.GetUsersByGroup(Constants.GroupUser.ID).Length)
                 {
                     _log.DebugFormat("TryAddLDAPUser(SID: {0}): Username '{1}' adding this user would exceed quota.",
                         ldapUserInfo.Sid, ldapUserInfo.UserName);
@@ -126,7 +136,7 @@ namespace ASC.ActiveDirectory
 
                 _log.DebugFormat("CoreContext.UserManager.SaveUserInfo({0})", ldapUserInfo.GetUserInfoString());
 
-                portalUserInfo = CoreContext.UserManager.SaveUserInfo(ldapUserInfo, syncCardDav: true);
+                portalUserInfo = UserManager.SaveUserInfo(ldapUserInfo);
 
                 var passwordHash = LdapUtils.GeneratePassword();
 
@@ -158,7 +168,7 @@ namespace ASC.ActiveDirectory
                 if (string.IsNullOrEmpty(ldapUserName))
                     return false;
 
-                var otherUser = CoreContext.UserManager.GetUserByUserName(ldapUserName);
+                var otherUser = UserManager.GetUserByUserName(ldapUserName);
 
                 if (Equals(otherUser, Constants.LostUser))
                     return true;
@@ -175,7 +185,7 @@ namespace ASC.ActiveDirectory
 
                 _log.DebugFormat("CoreContext.UserManager.SaveUserInfo({0})", otherUser.GetUserInfoString());
 
-                CoreContext.UserManager.SaveUserInfo(otherUser, syncCardDav: true);
+                UserManager.SaveUserInfo(otherUser);
 
                 return true;
             }
@@ -206,11 +216,11 @@ namespace ASC.ActiveDirectory
 
             UserInfo userToUpdate;
 
-            var userBySid = CoreContext.UserManager.GetUserBySid(ldapUserInfo.Sid);
+            var userBySid = UserManager.GetUserBySid(ldapUserInfo.Sid);
 
             if (Equals(userBySid, Constants.LostUser))
             {
-                var userByEmail = CoreContext.UserManager.GetUserByEmail(ldapUserInfo.Email);
+                var userByEmail = UserManager.GetUserByEmail(ldapUserInfo.Email);
 
                 if (Equals(userByEmail, Constants.LostUser))
                 {
@@ -237,7 +247,7 @@ namespace ASC.ActiveDirectory
                     if (onlyGetChanges)
                         changes.SetAddUserChange(result, _log);
 
-                    if (!onlyGetChanges && LdapSettings.Load().SendWelcomeEmail &&
+                    if (!onlyGetChanges && SettingsManager.Load<LdapSettings>().SendWelcomeEmail &&
                         (ldapUserInfo.ActivationStatus != EmployeeActivationStatus.AutoGenerated))
                     {
                         var client = LdapNotifyHelper.StudioNotifyClient;
@@ -250,7 +260,7 @@ namespace ASC.ActiveDirectory
                             new[] { new DirectRecipient(ldapUserInfo.Email, null, new[] { ldapUserInfo.Email }, false) },
                             new[] { ASC.Core.Configuration.Constants.NotifyEMailSenderSysName },
                             null,
-                            new TagValue(NotifyConstants.TagUserName, ldapUserInfo.DisplayUserName()),
+                            new TagValue(NotifyConstants.TagUserName, ldapUserInfo.DisplayUserName(DisplayUserSettingsHelper)),
                             new TagValue(NotifyConstants.TagUserEmail, ldapUserInfo.Email),
                             new TagValue(NotifyConstants.TagMyStaffLink, CommonLinkUtility.GetFullAbsolutePath(CommonLinkUtility.GetMyStaff())),
                             NotifyConstants.TagGreenButton(Resource.NotifyButtonJoin, confirmLink),
@@ -282,7 +292,7 @@ namespace ASC.ActiveDirectory
                 userToUpdate = userBySid;
             }
 
-            UpdateLdapUserContacts(ldapUserInfo, userToUpdate.Contacts);
+            UpdateLdapUserContacts(ldapUserInfo, userToUpdate.ContactsList);
 
             if (!NeedUpdateUser(userToUpdate, ldapUserInfo))
             {
@@ -318,9 +328,9 @@ namespace ASC.ActiveDirectory
             if (!portalUserContacts.Any())
                 return;
 
-            var ldapUserContacts = ldapUser.Contacts;
+            var ldapUserContacts = ldapUser.ContactsList;
 
-            var newContacts = new List<string>(ldapUser.Contacts);
+            var newContacts = new List<string>(ldapUser.ContactsList);
 
             for (int i = 0; i < portalUserContacts.Count; i += 2)
             {
@@ -334,7 +344,7 @@ namespace ASC.ActiveDirectory
                 newContacts.Add(portalUserContacts[i + 1]);
             }
 
-            ldapUser.Contacts = newContacts;
+            ldapUser.ContactsList = newContacts;
         }
 
         private bool NeedUpdateUser(UserInfo portalUser, UserInfo ldapUser)
@@ -343,7 +353,7 @@ namespace ASC.ActiveDirectory
 
             try
             {
-                var settings = LdapSettings.Load();
+                var settings = SettingsManager.Load<LdapSettings>();
 
                 Func<string, string, bool> notEqual =
                     (f1, f2) =>
@@ -426,12 +436,12 @@ namespace ASC.ActiveDirectory
                     needUpdate = true;
                 }
 
-                if (ldapUser.Contacts.Count != portalUser.Contacts.Count ||
-                    !ldapUser.Contacts.All(portalUser.Contacts.Contains))
+                if (ldapUser.ContactsList.Count != portalUser.ContactsList.Count ||
+                    !ldapUser.ContactsList.All(portalUser.ContactsList.Contains))
                 {
                     _log.DebugFormat("NeedUpdateUser by Contacts -> portal: '{0}', ldap: '{1}'",
-                        string.Join("|", portalUser.Contacts),
-                        string.Join("|", ldapUser.Contacts));
+                        string.Join("|", portalUser.ContactsList),
+                        string.Join("|", ldapUser.ContactsList));
                     needUpdate = true;
                 }
 
@@ -475,7 +485,7 @@ namespace ASC.ActiveDirectory
             {
                 _log.Debug("TryUpdateUserWithLDAPInfo()");
 
-                var settings = LdapSettings.Load();
+                var settings = SettingsManager.Load<LdapSettings>();
 
                 if (!userToUpdate.UserName.Equals(updateInfo.UserName, StringComparison.InvariantCultureIgnoreCase)
                     && !TryChangeExistingUserName(updateInfo.UserName, onlyGetChanges))
@@ -508,7 +518,7 @@ namespace ASC.ActiveDirectory
                 userToUpdate.FirstName = updateInfo.FirstName;
                 userToUpdate.LastName = updateInfo.LastName;
                 userToUpdate.Sid = updateInfo.Sid;
-                userToUpdate.Contacts = updateInfo.Contacts;
+                userToUpdate.ContactsList = updateInfo.ContactsList;
 
                 if (settings.LdapMapping.ContainsKey(Mapping.TitleAttribute)) userToUpdate.Title = updateInfo.Title;
                 if (settings.LdapMapping.ContainsKey(Mapping.LocationAttribute)) userToUpdate.Location = updateInfo.Location;
@@ -516,7 +526,7 @@ namespace ASC.ActiveDirectory
                 if (settings.LdapMapping.ContainsKey(Mapping.BirthDayAttribute)) userToUpdate.BirthDate = updateInfo.BirthDate;
                 if (settings.LdapMapping.ContainsKey(Mapping.MobilePhoneAttribute)) userToUpdate.MobilePhone = updateInfo.MobilePhone;
 
-                if (!userToUpdate.IsOwner()) // Owner must never be terminated by LDAP!
+                if (!userToUpdate.IsOwner(TenantManager.GetCurrentTenant())) // Owner must never be terminated by LDAP!
                 {
                     userToUpdate.Status = updateInfo.Status;
                 }
@@ -525,7 +535,7 @@ namespace ASC.ActiveDirectory
                 {
                     _log.DebugFormat("CoreContext.UserManager.SaveUserInfo({0})", userToUpdate.GetUserInfoString());
 
-                    portlaUserInfo = CoreContext.UserManager.SaveUserInfo(userToUpdate, syncCardDav: true);
+                    portlaUserInfo = UserManager.SaveUserInfo(userToUpdate);
                 }
 
                 return true;
@@ -548,7 +558,7 @@ namespace ASC.ActiveDirectory
 
             try
             {
-                var settings = LdapSettings.Load();
+                var settings = SettingsManager.Load<LdapSettings>();
 
                 if (!settings.EnableLdapAuthentication)
                     return false;
@@ -565,7 +575,7 @@ namespace ASC.ActiveDirectory
                     return false;
                 }
 
-                var portalUser = CoreContext.UserManager.GetUserBySid(ldapUserInfo.Item1.Sid);
+                var portalUser = UserManager.GetUserBySid(ldapUserInfo.Item1.Sid);
 
                 if (portalUser.Status == EmployeeStatus.Terminated || portalUser.Equals(Constants.LostUser))
                 {
@@ -593,13 +603,13 @@ namespace ASC.ActiveDirectory
                     _log.DebugFormat("TryCheckAndSyncToLdapUser(Username: '{0}', Email: {1}, DN: {2})",
                         ldapUserInfo.Item1.UserName, ldapUserInfo.Item1.Email, ldapUserInfo.Item2.DistinguishedName);
 
-                    var tenant = CoreContext.TenantManager.GetCurrentTenant();
+                    var tenant = TenantManager.GetCurrentTenant();
 
                     new System.Threading.Tasks.Task(() =>
                     {
                         try
                         {
-                            CoreContext.TenantManager.SetCurrentTenant(tenant);
+                            TenantManager.SetCurrentTenant(tenant);
                             SecurityContext.AuthenticateMe(Core.Configuration.Constants.CoreSystem);
 
                             var uInfo = SyncLDAPUser(ldapUserInfo.Item1);
@@ -613,7 +623,7 @@ namespace ASC.ActiveDirectory
                                     _log.DebugFormat("TryGetAndSyncLdapUserInfo(login: \"{0}\") disabling user {1} due to not being included in any ldap group", login, uInfo);
                                     uInfo.Status = EmployeeStatus.Terminated;
                                     uInfo.Sid = null;
-                                    CoreContext.UserManager.SaveUserInfo(uInfo, syncCardDav: true);
+                                    UserManager.SaveUserInfo(uInfo);
                                     CookiesManager.ResetUserCookie(uInfo.ID);
                                 }
                             }
@@ -675,7 +685,7 @@ namespace ASC.ActiveDirectory
                 {
                     userInfo.Sid = null;
                     userInfo.Status = EmployeeStatus.Terminated;
-                    CoreContext.UserManager.SaveUserInfo(userInfo, syncCardDav: true);
+                    UserManager.SaveUserInfo(userInfo);
                     throw new Exception("The user did not pass the configuration check by ldap group settings");
                 }
 

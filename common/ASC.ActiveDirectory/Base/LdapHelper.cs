@@ -32,6 +32,7 @@ namespace ASC.ActiveDirectory.Base
     {
         public LdapSettings Settings { get; private set; }
 
+        private static InstanceCrypto InstanceCrypto { get; }
         public abstract bool IsConnected { get; }
 
         protected readonly ILog Log;
@@ -111,7 +112,7 @@ namespace ASC.ActiveDirectory.Base
             string password;
             try
             {
-                password = new UnicodeEncoding().GetString(InstanceCrypto.Decrypt(passwordBytes));
+                password = InstanceCrypto.Decrypt(passwordBytes);
             }
             catch (Exception)
             {

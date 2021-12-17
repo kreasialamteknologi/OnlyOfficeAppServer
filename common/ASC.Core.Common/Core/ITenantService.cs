@@ -40,6 +40,8 @@ namespace ASC.Core
         void ValidateDomain(string domain);
 
         IEnumerable<Tenant> GetTenants(DateTime from, bool active = true);
+        
+        IEnumerable<Tenant> GetTenants(List<int> ids);
 
         IEnumerable<Tenant> GetTenants(string login, string passwordHash);
 

@@ -220,6 +220,11 @@ namespace ASC.Core.Caching
             return Service.GetTenants(login, passwordHash);
         }
 
+        public IEnumerable<Tenant> GetTenants(List<int> ids)
+        {
+            return Service.GetTenants(ids);
+        }
+
         public IEnumerable<Tenant> GetTenants(DateTime from, bool active = true)
         {
             return Service.GetTenants(from, active);

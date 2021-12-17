@@ -25,7 +25,7 @@ using ASC.Common.Logging;
 using ASC.Core;
 using ASC.Core.Users;
 
-using Monocert = Mono.Security.X509;
+//using Monocert = Mono.Security.X509;
 using Syscert = System.Security.Cryptography.X509Certificates;
 
 namespace ASC.ActiveDirectory
@@ -139,6 +139,7 @@ namespace ASC.ActiveDirectory
         {
             try
             {
+                /*
                 var monoX509 = new Monocert.X509Certificate(certificate.GetRawCertData());
 
                 var store = WorkContext.IsMono
@@ -146,6 +147,7 @@ namespace ASC.ActiveDirectory
                     : Monocert.X509StoreManager.LocalMachine.TrustedRoot;
 
                 return store.Certificates.Contains(monoX509);
+                */
             }
             catch (Exception ex)
             {
@@ -159,7 +161,8 @@ namespace ASC.ActiveDirectory
         public static bool TryInstallCert(Syscert.X509Certificate certificate, ILog log = null)
         {
             try
-            {
+            {    
+                /*
                 var monoX509 = new Monocert.X509Certificate(certificate.GetRawCertData());
 
                 var store = WorkContext.IsMono
@@ -169,8 +172,9 @@ namespace ASC.ActiveDirectory
                 // Add the certificate to the store.
                 store.Import(monoX509);
                 store.Certificates.Add(monoX509);
-
+                */
                 return true;
+                
             }
             catch (Exception ex)
             {
@@ -196,9 +200,9 @@ namespace ASC.ActiveDirectory
 
         public static string GetContactsString(this UserInfo userInfo)
         {
-            if (userInfo.Contacts.Count == 0) return null;
+            if (userInfo.ContactsList.Count == 0) return null;
             var sBuilder = new StringBuilder();
-            foreach (var contact in userInfo.Contacts)
+            foreach (var contact in userInfo.ContactsList)
             {
                 sBuilder.AppendFormat("{0}|", contact);
             }
