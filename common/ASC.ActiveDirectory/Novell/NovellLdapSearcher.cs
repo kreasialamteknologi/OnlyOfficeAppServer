@@ -424,7 +424,7 @@ namespace ASC.ActiveDirectory.Novell
                         continue;
                     }
 
-                    _log.DebugFormat("{0}. DN: {1}", ++i, nextEntry.DN);
+                    _log.DebugFormat("{0}. DN: {1}", ++i, nextEntry.Dn);
 
                     entries.Add(nextEntry);
 
@@ -451,7 +451,7 @@ namespace ASC.ActiveDirectory.Novell
                         if (!(control is LdapPagedResultsResponse))
                             continue;
 
-                        var response = new LdapPagedResultsResponse(control.ID,
+                        var response = new LdapPagedResultsResponse(control.Id,
                             control.Critical, control.getValue());
 
                         cookie = response.Cookie;
