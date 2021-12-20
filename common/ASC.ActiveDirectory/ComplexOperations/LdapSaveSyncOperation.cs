@@ -38,12 +38,14 @@ namespace ASC.ActiveDirectory.ComplexOperations
     {
         private readonly LdapChangeCollection _ldapChanges;
         private readonly UserInfo _currentUser;
+        private static UserManager UserManager { get; }
+        private TenantManager TenantManager { get; }
 
         public LdapSaveSyncOperation(LdapSettings settings, Tenant tenant, LdapOperationType operation, LdapLocalization resource = null, string userId = null)
             : base(settings, tenant, operation, resource)
         {
             _ldapChanges = new LdapChangeCollection { Tenant = tenant };
-            _currentUser = userId != null ? CoreContext.UserManager.GetUsers(Guid.Parse(userId)) : null;
+            _currentUser = userId != null ? UserManager.GetUsers(Guid.Parse(userId)) : null;
         }
 
         protected override void Do()
@@ -153,7 +155,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
             SetProgress((int)percents, Resource.LdapSettingsModifyLdapUsers);
 
-            var existingLDAPUsers = CoreContext.UserManager.GetUsers(EmployeeStatus.All).Where(u => u.Sid != null).ToList();
+            var existingLDAPUsers = UserManager.GetUsers(EmployeeStatus.All).Where(u => u.Sid != null).ToList();
 
             var step = percents / existingLDAPUsers.Count;
 
@@ -178,7 +180,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                         Logger.DebugFormat("CoreContext.UserManager.SaveUserInfo({0})", existingLDAPUser.GetUserInfoString());
 
-                        CoreContext.UserManager.SaveUserInfo(existingLDAPUser, syncCardDav: true);
+                        UserManager.SaveUserInfo(existingLDAPUser);
                         break;
                     case LdapOperationType.SaveTest:
                     case LdapOperationType.SyncTest:
@@ -194,7 +196,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
         private void SyncLDAP()
         {
-            var t = CoreContext.TenantManager.GetCurrentTenant();
+            var t = TenantManager.GetCurrentTenant();
 
             var currentDomainSettings = LdapCurrentDomain.Load();
 
@@ -272,7 +274,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                     hash = Convert.ToBase64String(md5.ComputeHash((byte[])image));
                 }
 
-                var user = CoreContext.UserManager.GetUserBySid(ldapUser.Sid);
+                var user = UserManager.GetUserBySid(ldapUser.Sid);
 
                 Logger.DebugFormat("SyncLdapAvatar() Found photo for '{0}'", ldapUser.Sid);
 
@@ -388,7 +390,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                 foreach (var ldapGr in ldapGroups)
                 {
-                    var gr = CoreContext.UserManager.GetGroupInfoBySid(ldapGr.Sid);
+                    var gr = UserManager.GetGroupInfoBySid(ldapGr.Sid);
 
                     if (gr == null)
                     {
@@ -396,14 +398,14 @@ namespace ASC.ActiveDirectory.ComplexOperations
                         continue;
                     }
 
-                    var users = CoreContext.UserManager.GetUsersByGroup(gr.ID);
+                    var users = UserManager.GetUsersByGroup(gr.ID);
 
                     Logger.DebugFormat("GiveUsersRights() Found '{0}' users for group '{1}' ({2})", users.Count(), gr.Name, gr.ID);
 
 
                     foreach (var user in users)
                     {
-                        if (!user.Equals(Constants.LostUser) && !user.IsVisitor())
+                        if (!user.Equals(Constants.LostUser) && !user.IsVisitor(UserManager))
                         {
                             if (!usersWithRightsFlat.Contains(user.ID.ToString()))
                             {
@@ -562,7 +564,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                         string.Format("({0}/{1}): {2}", gIndex,
                             gCount, ldapGroup.Name));
 
-                var dbLdapGroup = CoreContext.UserManager.GetGroupInfoBySid(ldapGroup.Sid);
+                var dbLdapGroup = UserManager.GetGroupInfoBySid(ldapGroup.Sid);
 
                 if (Equals(dbLdapGroup, Constants.LostGroupInfo))
                 {
@@ -601,7 +603,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 {
                     case LdapOperationType.Save:
                     case LdapOperationType.Sync:
-                        ldapGroup = CoreContext.UserManager.SaveGroupInfo(ldapGroup);
+                        ldapGroup = UserManager.SaveGroupInfo(ldapGroup);
 
                         var index = 0;
                         var count = groupMembersToAdd.Count;
@@ -616,7 +618,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                                         ++index, count,
                                         UserFormatter.GetUserName(userBySid, DisplayUserNameFormat.Default)));
 
-                            CoreContext.UserManager.AddUserIntoGroup(userBySid.ID, ldapGroup.ID);
+                            UserManager.AddUserIntoGroup(userBySid.ID, ldapGroup.ID);
                         }
                         break;
                     case LdapOperationType.SaveTest:
@@ -654,7 +656,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 string.Format("({0}/{1}): {2}", gIndex, gCount, ldapGroup.Name));
 
             var dbGroupMembers =
-                        CoreContext.UserManager.GetUsersByGroup(dbLdapGroup.ID, EmployeeStatus.All)
+                        UserManager.GetUsersByGroup(dbLdapGroup.ID, EmployeeStatus.All)
                             .Where(u => u.Sid != null)
                             .ToList();
 
@@ -680,7 +682,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                         dbLdapGroup.Name = ldapGroup.Name;
                         dbLdapGroup.Sid = ldapGroup.Sid;
 
-                        dbLdapGroup = CoreContext.UserManager.SaveGroupInfo(dbLdapGroup);
+                        dbLdapGroup = UserManager.SaveGroupInfo(dbLdapGroup);
                     }
 
                     var index = 0;
@@ -696,7 +698,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                                     ++index, count,
                                     UserFormatter.GetUserName(dbUser, DisplayUserNameFormat.Default)));
 
-                        CoreContext.UserManager.RemoveUserFromGroup(dbUser.ID, dbLdapGroup.ID);
+                        UserManager.RemoveUserFromGroup(dbUser.ID, dbLdapGroup.ID);
                     }
 
                     index = 0;
@@ -712,7 +714,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                                     ++index, count,
                                     UserFormatter.GetUserName(userInfo, DisplayUserNameFormat.Default)));
 
-                        CoreContext.UserManager.AddUserIntoGroup(userInfo.ID, dbLdapGroup.ID);
+                        UserManager.AddUserIntoGroup(userInfo.ID, dbLdapGroup.ID);
                     }
 
                     if (dbGroupMembers.All(dbUser => groupMembersToRemove.Exists(u => u.ID.Equals(dbUser.ID)))
@@ -721,7 +723,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                         SetProgress(currentSource:
                             string.Format("({0}/{1}): {2}", gIndex, gCount, dbLdapGroup.Name));
 
-                        CoreContext.UserManager.DeleteGroup(dbLdapGroup.ID);
+                        UserManager.DeleteGroup(dbLdapGroup.ID);
                     }
 
                     break;
@@ -753,7 +755,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
             if (string.IsNullOrEmpty(sid))
                 return Constants.LostUser;
 
-            var foundUser = CoreContext.UserManager.GetUserBySid(sid);
+            var foundUser = UserManager.GetUserBySid(sid);
 
             return foundUser;
         }
@@ -806,7 +808,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
         /// <returns>New list of actual LDAP users</returns>
         private List<UserInfo> RemoveOldDbUsers(List<UserInfo> ldapUsers)
         {
-            var dbLdapUsers = CoreContext.UserManager.GetUsers(EmployeeStatus.All).Where(u => u.Sid != null).ToList();
+            var dbLdapUsers = UserManager.GetUsers(EmployeeStatus.All).Where(u => u.Sid != null).ToList();
 
             if (!dbLdapUsers.Any())
                 return ldapUsers;
@@ -852,7 +854,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                         Logger.DebugFormat("CoreContext.UserManager.SaveUserInfo({0})", removedUser.GetUserInfoString());
 
-                        CoreContext.UserManager.SaveUserInfo(removedUser, syncCardDav: true);
+                        UserManager.SaveUserInfo(removedUser, syncCardDav: true);
                         break;
                     case LdapOperationType.SaveTest:
                     case LdapOperationType.SyncTest:
@@ -877,7 +879,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
             var percentage = (double)GetProgress();
 
             var removedDbLdapGroups =
-                CoreContext.UserManager.GetGroups()
+                UserManager.GetGroups()
                     .Where(g => g.Sid != null && ldapGroups.FirstOrDefault(lg => g.Sid.Equals(lg.Sid)) == null)
                     .ToList();
 
@@ -900,7 +902,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 {
                     case LdapOperationType.Save:
                     case LdapOperationType.Sync:
-                        CoreContext.UserManager.DeleteGroup(groupInfo.ID);
+                        UserManager.DeleteGroup(groupInfo.ID);
                         break;
                     case LdapOperationType.SaveTest:
                     case LdapOperationType.SyncTest:

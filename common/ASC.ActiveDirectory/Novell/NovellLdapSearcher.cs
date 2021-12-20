@@ -515,9 +515,9 @@ namespace ASC.ActiveDirectory.Novell
                             .ToList()
                             .Select(s =>
                             {
-                                if (Base64.isLDIFSafe(s)) return s;
+                                if (Base64.IsLdifSafe(s)) return s;
                                 var tbyte = SupportClass.ToByteArray(s);
-                                s = Base64.encode(SupportClass.ToSByteArray(tbyte));
+                                s = Base64.Encode(SupportClass.ToSByteArray(tbyte));
 
                                 return s;
                             }).ToArray();
@@ -586,7 +586,7 @@ namespace ASC.ActiveDirectory.Novell
                 _ldapConnection.SearchConstraints.TimeLimit = 10000;
                 _ldapConnection.ConnectionTimeout = 10000;
 
-                if (_ldapConnection.TLS)
+                if (_ldapConnection.Tls)
                 {
                     _log.Debug("ldapConnection.StopTls();");
                     _ldapConnection.StopTls();
