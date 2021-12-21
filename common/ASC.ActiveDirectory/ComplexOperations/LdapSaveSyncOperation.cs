@@ -25,9 +25,13 @@ using ASC.ActiveDirectory.Base.Settings;
 using ASC.ActiveDirectory.ComplexOperations.Data;
 using ASC.ActiveDirectory.Novell.Exceptions;
 using ASC.Core;
+using ASC.Core.Common.Settings;
 using ASC.Core.Tenants;
 using ASC.Core.Users;
+using ASC.Web.Core;
 using ASC.Web.Core.Users;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using Newtonsoft.Json;
 // ReSharper disable RedundantToStringCall
@@ -40,7 +44,13 @@ namespace ASC.ActiveDirectory.ComplexOperations
         private readonly UserInfo _currentUser;
         private static UserManager UserManager { get; }
         private TenantManager TenantManager { get; }
+        private ServiceProvider ServiceProvider { get;  }
+        private SettingsManager SettingsManager { get; }
+        private UserFormatter UserFormatter { get; }
 
+        private WebItemSecurity WebItemSecurity { get; }
+
+        private UserPhotoManager UserPhotoManager { get; }
         public LdapSaveSyncOperation(LdapSettings settings, Tenant tenant, LdapOperationType operation, LdapLocalization resource = null, string userId = null)
             : base(settings, tenant, operation, resource)
         {
@@ -56,9 +66,9 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 {
                     SetProgress(10, Resource.LdapSettingsStatusSavingSettings);
 
-                    LDAPSettings.IsDefault = LDAPSettings.Equals(LDAPSettings.GetDefault());
+                    LDAPSettings.IsDefault = LDAPSettings.Equals(LDAPSettings.GetDefault(ServiceProvider));
 
-                    if (!LDAPSettings.Save())
+                    if (!SettingsManager.Save(LDAPSettings))
                     {
                         Logger.Error("Can't save LDAP settings.");
                         Error = Resource.LdapSettingsErrorCantSaveLdapSettings;
@@ -100,9 +110,14 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                     TurnOffLDAP();
 
-                    ((LdapCurrentUserPhotos)LdapCurrentUserPhotos.Load().GetDefault()).Save();
+                    //((LdapCurrentUserPhotos)LdapCurrentUserPhotos.Load().GetDefault()).Save();
+                    //((LdapCurrentAcccessSettings)LdapCurrentAcccessSettings.Load().GetDefault()).Save();
 
-                    ((LdapCurrentAcccessSettings)LdapCurrentAcccessSettings.Load().GetDefault()).Save();
+                    var ldapCurrentUserPhotos = SettingsManager.Load<LdapCurrentUserPhotos>().GetDefault(ServiceProvider);
+                    var ldapCurrentAcccessSettings = SettingsManager.Load<LdapCurrentAcccessSettings>().GetDefault(ServiceProvider);
+
+                    SettingsManager.Save(ldapCurrentUserPhotos);
+                    SettingsManager.Save(ldapCurrentAcccessSettings);
                     //не снимать права при выключении
                     //var rights = new List<LdapSettings.AccessRight>();
                     //TakeUsersRights(rights);
@@ -198,12 +213,12 @@ namespace ASC.ActiveDirectory.ComplexOperations
         {
             var t = TenantManager.GetCurrentTenant();
 
-            var currentDomainSettings = LdapCurrentDomain.Load();
+            var currentDomainSettings = SettingsManager.Load<LdapCurrentDomain>();
 
             if (string.IsNullOrEmpty(currentDomainSettings.CurrentDomain) || currentDomainSettings.CurrentDomain != Importer.LDAPDomain)
             {
                 currentDomainSettings.CurrentDomain = Importer.LDAPDomain;
-                currentDomainSettings.Save();
+                SettingsManager.Save(currentDomainSettings);
             }
 
             if (!LDAPSettings.GroupMembership)
@@ -230,7 +245,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
             if (!LDAPSettings.LdapMapping.ContainsKey(LdapSettings.MappingFields.AvatarAttribute))
             {
-                var ph = LdapCurrentUserPhotos.Load();
+                var ph = SettingsManager.Load<LdapCurrentUserPhotos>();
 
                 if (ph.CurrentPhotos == null || !ph.CurrentPhotos.Any())
                 {
@@ -245,11 +260,11 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 }
 
                 ph.CurrentPhotos = null;
-                ph.Save();
+                SettingsManager.Save(ph);
                 return;
             }
 
-            var photoSettings = LdapCurrentUserPhotos.Load();
+            var photoSettings = SettingsManager.Load<LdapCurrentUserPhotos>();
 
             if (photoSettings.CurrentPhotos == null)
             {
@@ -309,8 +324,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                     }
                 }
             }
-
-            photoSettings.Save();
+            SettingsManager.Save(photoSettings);
         }
 
         private void SyncLdapAccessRights()
@@ -330,12 +344,12 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 Warning = Resource.LdapSettingsErrorLostRights;
             }
 
-            LDAPSettings.Save();
+             SettingsManager.Save(LDAPSettings);
         }
 
         private void TakeUsersRights(List<LdapSettings.AccessRight> currentUserRights)
         {
-            var current = LdapCurrentAcccessSettings.Load();
+            var current = SettingsManager.Load<LdapCurrentAcccessSettings>();
 
             if (current.CurrentAccessRights == null || !current.CurrentAccessRights.Any())
             {
@@ -360,18 +374,18 @@ namespace ASC.ActiveDirectory.ComplexOperations
                     else
                     {
                         Logger.DebugFormat("TakeUsersRights() Taking admin rights ({0}) from '{1}'", right.Key, user);
-                        Web.Core.WebItemSecurity.SetProductAdministrator(LdapSettings.AccessRightsGuids[right.Key], userId, false);
+                        WebItemSecurity.SetProductAdministrator(LdapSettings.AccessRightsGuids[right.Key], userId, false);
                     }
                 }
             }
 
             current.CurrentAccessRights = null;
-            current.Save();
+            SettingsManager.Save(current);
         }
 
         private void GiveUsersRights(Dictionary<LdapSettings.AccessRight, string> accessRightsSettings, List<LdapSettings.AccessRight> currentUserRights)
         {
-            var current = LdapCurrentAcccessSettings.Load();
+            var current = SettingsManager.Load<LdapCurrentAcccessSettings>();
             var currentAccessRights = new Dictionary<LdapSettings.AccessRight, List<string>>();
             var usersWithRightsFlat = current.CurrentAccessRights == null ? new List<string>() : current.CurrentAccessRights.SelectMany(x => x.Value).Distinct().ToList();
 
@@ -417,10 +431,10 @@ namespace ASC.ActiveDirectory.ComplexOperations
                                 {
                                     var prodId = LdapSettings.AccessRightsGuids[r];
 
-                                    if (Web.Core.WebItemSecurity.IsProductAdministrator(prodId, user.ID))
+                                    if (WebItemSecurity.IsProductAdministrator(prodId, user.ID))
                                     {
                                         cleared = true;
-                                        Web.Core.WebItemSecurity.SetProductAdministrator(prodId, user.ID, false);
+                                        WebItemSecurity.SetProductAdministrator(prodId, user.ID, false);
                                     }
                                 }
 
@@ -438,7 +452,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                             SetProgress((int)currentPercent,
                                 string.Format(Resource.LdapSettingsStatusGivingRights, UserFormatter.GetUserName(user, DisplayUserNameFormat.Default), access.Key));
-                            Web.Core.WebItemSecurity.SetProductAdministrator(LdapSettings.AccessRightsGuids[access.Key], user.ID, true);
+                            WebItemSecurity.SetProductAdministrator(LdapSettings.AccessRightsGuids[access.Key], user.ID, true);
 
                             if (currentUserRights != null && currentUserRights.Contains(access.Key))
                             {
@@ -450,7 +464,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
             }
 
             current.CurrentAccessRights = currentAccessRights;
-            current.Save();
+            SettingsManager.Save(current);
         }
 
         private void SyncLDAPUsers()
@@ -840,7 +854,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                     case LdapOperationType.Save:
                     case LdapOperationType.Sync:
                         removedUser.Sid = null;
-                        if (!removedUser.IsOwner() && !(_currentUser != null && _currentUser.ID == removedUser.ID && removedUser.IsAdmin()))
+                        if (!removedUser.IsOwner(TenantManager.GetCurrentTenant()) && !(_currentUser != null && _currentUser.ID == removedUser.ID && removedUser.IsAdmin(UserManager)))
                         {
                             removedUser.Status = EmployeeStatus.Terminated; // Disable user on portal
                         }
@@ -854,7 +868,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                         Logger.DebugFormat("CoreContext.UserManager.SaveUserInfo({0})", removedUser.GetUserInfoString());
 
-                        UserManager.SaveUserInfo(removedUser, syncCardDav: true);
+                        UserManager.SaveUserInfo(removedUser/*, syncCardDav: true*/ );
                         break;
                     case LdapOperationType.SaveTest:
                     case LdapOperationType.SyncTest:

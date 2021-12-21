@@ -49,6 +49,8 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
         private readonly string _culture;
 
+        private TenantManager TenantManager { get; }
+        private SecurityContext SecurityContext { get; }
         public LdapSettings LDAPSettings { get; private set; }
 
         public LdapUserImporter Importer { get; private set; }
@@ -107,7 +109,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
             {
                 CancellationToken = cancellationToken;
 
-                CoreContext.TenantManager.SetCurrentTenant(CurrentTenant);
+                TenantManager.SetCurrentTenant(CurrentTenant);
 
                 SecurityContext.AuthenticateMe(Core.Configuration.Constants.CoreSystem);
 
