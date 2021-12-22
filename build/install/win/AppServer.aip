@@ -552,52 +552,52 @@
     <ROW MsiServiceConfig="__9" Name="[ServiceName_OnlyofficeEncryptionService]" Event="1" ConfigType="3" Argument="1" Component_="ASC.Data.Storage.Encryption.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServConfigFailureActionsComponent">
-    <ROW MsiServiceConfigFailureActions="_" Name="[ServiceName_OnlyofficeApiSystemService]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.ApiSystem.exe"/>
-    <ROW MsiServiceConfigFailureActions="__1" Name="[ServiceName_OnlyofficeThumbnails]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.Thumbnails.Svc.exe"/>
-    <ROW MsiServiceConfigFailureActions="__10" Name="[ServiceName_OnlyofficeMigrationService]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.Data.Storage.Migration.exe"/>
-    <ROW MsiServiceConfigFailureActions="__11" Name="[ServiceName_OnlyofficeFileService]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.Files.Service.exe"/>
-    <ROW MsiServiceConfigFailureActions="__12" Name="[ServiceName_OnlyofficeNotifyService]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.Notify.exe"/>
-    <ROW MsiServiceConfigFailureActions="__13" Name="[ServiceName_OnlyofficeSocket.IO]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.Socket.IO.Svc.exe"/>
-    <ROW MsiServiceConfigFailureActions="__14" Name="[ServiceName_OnlyofficeStudioNotifyService]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.Studio.Notify.exe"/>
-    <ROW MsiServiceConfigFailureActions="__15" Name="[ServiceName_OnlyofficeTelegramService]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.TelegramService.exe"/>
-    <ROW MsiServiceConfigFailureActions="__16" Name="[ServiceName_OnlyofficeWebApi]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.Web.Api.exe"/>
-    <ROW MsiServiceConfigFailureActions="__17" Name="[ServiceName_OnlyofficeWebStudio]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.Web.Studio.exe"/>
-    <ROW MsiServiceConfigFailureActions="__18" Name="[ServiceName_OnlyofficeProxy]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="OnlyofficeProxy.exe"/>
-    <ROW MsiServiceConfigFailureActions="__19" Name="[ServiceName_Apache_ZooKeeper]" Event="1" ResetPeriod="1" Actions="1" DelayActions="0" Component_="zookeeper.exe"/>
-    <ROW MsiServiceConfigFailureActions="__2" Name="[ServiceName_OnlyofficeUrlShortenerService]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.UrlShortener.Svc.exe"/>
-    <ROW MsiServiceConfigFailureActions="__20" Name="[ServiceName_OnlyofficeBackupService]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.Data.Backup.exe"/>
-    <ROW MsiServiceConfigFailureActions="__21" Name="[ServiceName_Apache_Kafka]" Event="1" ResetPeriod="1" Actions="1" DelayActions="0" Component_="kafka.exe"/>
-    <ROW MsiServiceConfigFailureActions="__3" Name="[ServiceName_OnlyofficeCalendarServer]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.Calendar.exe"/>
-    <ROW MsiServiceConfigFailureActions="__4" Name="[ServiceName_OnlyofficeCrmServer]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.CRM.exe"/>
-    <ROW MsiServiceConfigFailureActions="__5" Name="[ServiceName_OnlyofficeFileServer]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.Files.exe"/>
-    <ROW MsiServiceConfigFailureActions="__6" Name="[ServiceName_OnlyofficeMailServer]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.Mail.exe"/>
-    <ROW MsiServiceConfigFailureActions="__7" Name="[ServiceName_OnlyofficePeopleServer]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.People.exe"/>
-    <ROW MsiServiceConfigFailureActions="__8" Name="[ServiceName_OnlyofficeProjectsServer]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="AI_ExePath"/>
-    <ROW MsiServiceConfigFailureActions="__9" Name="[ServiceName_OnlyofficeEncryptionService]" Event="1" ResetPeriod="1" Actions="1" DelayActions="1" Component_="ASC.Data.Storage.Encryption.exe"/>
+    <ROW MsiServiceConfigFailureActions="_" Name="[ServiceName_OnlyofficeApiSystemService]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.ApiSystem.exe"/>
+    <ROW MsiServiceConfigFailureActions="__1" Name="[ServiceName_OnlyofficeThumbnails]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.Thumbnails.Svc.exe"/>
+    <ROW MsiServiceConfigFailureActions="__10" Name="[ServiceName_OnlyofficeMigrationService]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.Data.Storage.Migration.exe"/>
+    <ROW MsiServiceConfigFailureActions="__11" Name="[ServiceName_OnlyofficeFileService]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.Files.Service.exe"/>
+    <ROW MsiServiceConfigFailureActions="__12" Name="[ServiceName_OnlyofficeNotifyService]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.Notify.exe"/>
+    <ROW MsiServiceConfigFailureActions="__13" Name="[ServiceName_OnlyofficeSocket.IO]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.Socket.IO.Svc.exe"/>
+    <ROW MsiServiceConfigFailureActions="__14" Name="[ServiceName_OnlyofficeStudioNotifyService]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.Studio.Notify.exe"/>
+    <ROW MsiServiceConfigFailureActions="__15" Name="[ServiceName_OnlyofficeTelegramService]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.TelegramService.exe"/>
+    <ROW MsiServiceConfigFailureActions="__16" Name="[ServiceName_OnlyofficeWebApi]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.Web.Api.exe"/>
+    <ROW MsiServiceConfigFailureActions="__17" Name="[ServiceName_OnlyofficeWebStudio]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.Web.Studio.exe"/>
+    <ROW MsiServiceConfigFailureActions="__18" Name="[ServiceName_OnlyofficeProxy]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="OnlyofficeProxy.exe"/>
+    <ROW MsiServiceConfigFailureActions="__19" Name="[ServiceName_Apache_ZooKeeper]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="0[~]1[~]1" Component_="zookeeper.exe"/>
+    <ROW MsiServiceConfigFailureActions="__2" Name="[ServiceName_OnlyofficeUrlShortenerService]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.UrlShortener.Svc.exe"/>
+    <ROW MsiServiceConfigFailureActions="__20" Name="[ServiceName_OnlyofficeBackupService]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.Data.Backup.exe"/>
+    <ROW MsiServiceConfigFailureActions="__21" Name="[ServiceName_Apache_Kafka]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="0[~]1[~]1" Component_="kafka.exe"/>
+    <ROW MsiServiceConfigFailureActions="__3" Name="[ServiceName_OnlyofficeCalendarServer]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.Calendar.exe"/>
+    <ROW MsiServiceConfigFailureActions="__4" Name="[ServiceName_OnlyofficeCrmServer]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.CRM.exe"/>
+    <ROW MsiServiceConfigFailureActions="__5" Name="[ServiceName_OnlyofficeFileServer]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.Files.exe"/>
+    <ROW MsiServiceConfigFailureActions="__6" Name="[ServiceName_OnlyofficeMailServer]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.Mail.exe"/>
+    <ROW MsiServiceConfigFailureActions="__7" Name="[ServiceName_OnlyofficePeopleServer]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.People.exe"/>
+    <ROW MsiServiceConfigFailureActions="__8" Name="[ServiceName_OnlyofficeProjectsServer]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.Projects.exe"/>
+    <ROW MsiServiceConfigFailureActions="__9" Name="[ServiceName_OnlyofficeEncryptionService]" Event="1" ResetPeriod="0" Actions="1[~]1[~]1" DelayActions="1[~]1[~]1" Component_="ASC.Data.Storage.Encryption.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServCtrlComponent">
-    <ROW ServiceControl="ASC.ApiSystem.exe" Name="[ServiceName_OnlyofficeApiSystemService]" Event="161" Wait="1" Component_="ASC.ApiSystem.exe"/>
-    <ROW ServiceControl="ASC.CRM.exe" Name="[ServiceName_OnlyofficeCrmServer]" Event="161" Wait="1" Component_="ASC.CRM.exe"/>
+    <ROW ServiceControl="ASC.ApiSystem.exe" Name="[ServiceName_OnlyofficeApiSystemService]" Event="161" Wait="0" Component_="ASC.ApiSystem.exe"/>
+    <ROW ServiceControl="ASC.CRM.exe" Name="[ServiceName_OnlyofficeCrmServer]" Event="161" Wait="0" Component_="ASC.CRM.exe"/>
     <ROW ServiceControl="ASC.Calendar.exe" Name="[ServiceName_OnlyofficeCalendarServer]" Event="161" Wait="0" Component_="ASC.Calendar.exe"/>
-    <ROW ServiceControl="ASC.Data.Backup.exe" Name="[ServiceName_OnlyofficeBackupService]" Event="161" Wait="1" Component_="ASC.Data.Backup.exe"/>
-    <ROW ServiceControl="ASC.Data.Storage.Encryption.exe" Name="[ServiceName_OnlyofficeEncryptionService]" Event="161" Wait="1" Component_="ASC.Data.Storage.Encryption.exe"/>
-    <ROW ServiceControl="ASC.Data.Storage.Migration.exe" Name="[ServiceName_OnlyofficeMigrationService]" Event="161" Wait="1" Component_="ASC.Data.Storage.Migration.exe"/>
-    <ROW ServiceControl="ASC.Files.Service.exe" Name="[ServiceName_OnlyofficeFileService]" Event="161" Wait="1" Component_="ASC.Files.Service.exe"/>
-    <ROW ServiceControl="ASC.Files.exe" Name="[ServiceName_OnlyofficeFileServer]" Event="161" Wait="1" Component_="ASC.Files.exe"/>
-    <ROW ServiceControl="ASC.Mail.exe" Name="[ServiceName_OnlyofficeMailServer]" Event="161" Wait="1" Component_="ASC.Mail.exe"/>
-    <ROW ServiceControl="ASC.Notify.exe" Name="[ServiceName_OnlyofficeNotifyService]" Event="161" Wait="1" Component_="ASC.Notify.exe"/>
-    <ROW ServiceControl="ASC.People.exe" Name="[ServiceName_OnlyofficePeopleServer]" Event="161" Wait="1" Component_="ASC.People.exe"/>
-    <ROW ServiceControl="ASC.Projects.exe" Name="[ServiceName_OnlyofficeProjectsServer]" Event="161" Wait="1" Component_="ASC.Projects.exe"/>
-    <ROW ServiceControl="ASC.Socket.IO.Svc.exe" Name="[ServiceName_OnlyofficeSocket.IO]" Event="161" Wait="1" Component_="ASC.Socket.IO.Svc.exe"/>
-    <ROW ServiceControl="ASC.Studio.Notify.exe" Name="[ServiceName_OnlyofficeStudioNotifyService]" Event="161" Wait="1" Component_="ASC.Studio.Notify.exe"/>
-    <ROW ServiceControl="ASC.TelegramService.exe" Name="[ServiceName_OnlyofficeTelegramService]" Event="161" Wait="1" Component_="ASC.TelegramService.exe"/>
+    <ROW ServiceControl="ASC.Data.Backup.exe" Name="[ServiceName_OnlyofficeBackupService]" Event="161" Wait="0" Component_="ASC.Data.Backup.exe"/>
+    <ROW ServiceControl="ASC.Data.Storage.Encryption.exe" Name="[ServiceName_OnlyofficeEncryptionService]" Event="161" Wait="0" Component_="ASC.Data.Storage.Encryption.exe"/>
+    <ROW ServiceControl="ASC.Data.Storage.Migration.exe" Name="[ServiceName_OnlyofficeMigrationService]" Event="161" Wait="0" Component_="ASC.Data.Storage.Migration.exe"/>
+    <ROW ServiceControl="ASC.Files.Service.exe" Name="[ServiceName_OnlyofficeFileService]" Event="161" Wait="0" Component_="ASC.Files.Service.exe"/>
+    <ROW ServiceControl="ASC.Files.exe" Name="[ServiceName_OnlyofficeFileServer]" Event="161" Wait="0" Component_="ASC.Files.exe"/>
+    <ROW ServiceControl="ASC.Mail.exe" Name="[ServiceName_OnlyofficeMailServer]" Event="161" Wait="0" Component_="ASC.Mail.exe"/>
+    <ROW ServiceControl="ASC.Notify.exe" Name="[ServiceName_OnlyofficeNotifyService]" Event="161" Wait="0" Component_="ASC.Notify.exe"/>
+    <ROW ServiceControl="ASC.People.exe" Name="[ServiceName_OnlyofficePeopleServer]" Event="161" Wait="0" Component_="ASC.People.exe"/>
+    <ROW ServiceControl="ASC.Projects.exe" Name="[ServiceName_OnlyofficeProjectsServer]" Event="161" Wait="0" Component_="ASC.Projects.exe"/>
+    <ROW ServiceControl="ASC.Socket.IO.Svc.exe" Name="[ServiceName_OnlyofficeSocket.IO]" Event="161" Wait="0" Component_="ASC.Socket.IO.Svc.exe"/>
+    <ROW ServiceControl="ASC.Studio.Notify.exe" Name="[ServiceName_OnlyofficeStudioNotifyService]" Event="161" Wait="0" Component_="ASC.Studio.Notify.exe"/>
+    <ROW ServiceControl="ASC.TelegramService.exe" Name="[ServiceName_OnlyofficeTelegramService]" Event="161" Wait="0" Component_="ASC.TelegramService.exe"/>
     <ROW ServiceControl="ASC.Thumbnails.Svc.exe" Name="[ServiceName_OnlyofficeThumbnails]" Event="161" Wait="0" Component_="ASC.Thumbnails.Svc.exe"/>
     <ROW ServiceControl="ASC.UrlShortener.Svc.exe" Name="[ServiceName_OnlyofficeUrlShortenerService]" Event="161" Wait="0" Component_="ASC.UrlShortener.Svc.exe"/>
-    <ROW ServiceControl="ASC.Web.Api.exe" Name="[ServiceName_OnlyofficeWebApi]" Event="161" Wait="1" Component_="ASC.Web.Api.exe"/>
-    <ROW ServiceControl="ASC.Web.Studio.exe" Name="[ServiceName_OnlyofficeWebStudio]" Event="161" Wait="1" Component_="ASC.Web.Studio.exe"/>
-    <ROW ServiceControl="kafka.exe" Name="[ServiceName_Apache_Kafka]" Event="161" Wait="1" Component_="kafka.exe"/>
-    <ROW ServiceControl="nginx.exe" Name="[ServiceName_OnlyofficeProxy]" Event="161" Wait="1" Component_="OnlyofficeProxy.exe"/>
-    <ROW ServiceControl="zookeeper.exe" Name="[ServiceName_Apache_ZooKeeper]" Event="161" Wait="1" Component_="zookeeper.exe"/>
+    <ROW ServiceControl="ASC.Web.Api.exe" Name="[ServiceName_OnlyofficeWebApi]" Event="161" Wait="0" Component_="ASC.Web.Api.exe"/>
+    <ROW ServiceControl="ASC.Web.Studio.exe" Name="[ServiceName_OnlyofficeWebStudio]" Event="161" Wait="0" Component_="ASC.Web.Studio.exe"/>
+    <ROW ServiceControl="kafka.exe" Name="[ServiceName_Apache_Kafka]" Event="161" Wait="0" Component_="kafka.exe"/>
+    <ROW ServiceControl="nginx.exe" Name="[ServiceName_OnlyofficeProxy]" Event="161" Wait="0" Component_="OnlyofficeProxy.exe"/>
+    <ROW ServiceControl="zookeeper.exe" Name="[ServiceName_Apache_ZooKeeper]" Event="161" Wait="0" Component_="zookeeper.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiServInstComponent">
     <ROW ServiceInstall="ASC.ApiSystem.exe" Name="[ServiceName_OnlyofficeApiSystemService]" DisplayName="[ServiceName_OnlyofficeApiSystemService]" ServiceType="16" StartType="2" ErrorControl="1" Arguments="--urls=http://127.0.0.1:5010 --ENVIRONMENT=test --pathToConf=&quot;[APPDIR]config&quot; --$STORAGE_ROOT=&quot;[APPDIR]Data&quot; --log:dir=&quot;[APPDIR]Logs&quot;" Component_="ASC.ApiSystem.exe"/>
