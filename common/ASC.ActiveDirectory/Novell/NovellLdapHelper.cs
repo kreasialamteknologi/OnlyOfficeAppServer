@@ -209,7 +209,7 @@ namespace ASC.ActiveDirectory.Novell
         {
             try
             {
-                var ldapUniqueIdAttribute = ConfigurationManagerExtension.AppSettings["ldap.unique.id"];
+                var ldapUniqueIdAttribute = String.Empty; //ConfigurationManagerExtension.AppSettings["ldap.unique.id"];
 
                 Criteria criteria;
 

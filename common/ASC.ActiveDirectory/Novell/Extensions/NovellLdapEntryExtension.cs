@@ -33,7 +33,7 @@ namespace ASC.ActiveDirectory.Novell.Extensions
     {
         public static object GetAttributeValue(this LdapEntry ldapEntry, string attributeName, bool getBytes = false)
         {
-            var attribute = ldapEntry.getAttribute(attributeName);
+            var attribute = ldapEntry.GetAttribute(attributeName);
 
             if (attribute == null)
                 return null;
@@ -61,7 +61,7 @@ namespace ASC.ActiveDirectory.Novell.Extensions
 
         public static string[] GetAttributeArrayValue(this LdapEntry ldapEntry, string attributeName)
         {
-            var attribute = ldapEntry.getAttribute(attributeName);
+            var attribute = ldapEntry.GetAttribute(attributeName);
             return attribute == null ? null : attribute.StringValueArray;
         }
 

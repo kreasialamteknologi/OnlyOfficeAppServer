@@ -30,6 +30,8 @@ using ASC.ActiveDirectory.Novell.Exceptions;
 using ASC.ActiveDirectory.Novell.Extensions;
 using ASC.Common.Logging;
 
+using Microsoft.Extensions.Options;
+
 using Novell.Directory.Ldap;
 using Novell.Directory.Ldap.Controls;
 using Novell.Directory.Ldap.Utilclass;
@@ -39,7 +41,8 @@ namespace ASC.ActiveDirectory.Novell
 {
     public class NovellLdapSearcher : IDisposable
     {
-        private readonly ILog _log = LogManager.GetLogger("ASC");
+        private static IOptionsMonitor<ILog> option;
+        private readonly ILog _log = option.Get("ASC");
         private LdapCertificateConfirmRequest _certificateConfirmRequest;
         private static readonly object RootSync = new object();
 
@@ -75,7 +78,8 @@ namespace ASC.ActiveDirectory.Novell
             AcceptCertificate = acceptCertificate;
             AcceptCertificateHash = acceptCertificateHash;
 
-            LdapUniqueIdAttribute = ConfigurationManagerExtension.AppSettings["ldap.unique.id"];
+            //LdapUniqueIdAttribute = ConfigurationManagerExtension.AppSettings["ldap.unique.id"];
+            LdapUniqueIdAttribute = String.Empty; //TODO: using ConfigurationManagerExtension not understand
         }
 
         public void Connect()
@@ -265,12 +269,12 @@ namespace ASC.ActiveDirectory.Novell
             var queue = _ldapConnection.Search(searchBase,
                 (int)scope, searchFilter, attributes, false, ldapSearchConstraints);
 
-            while (queue.hasMore())
+            while (queue.HasMore())
             {
                 LdapEntry nextEntry;
                 try
                 {
-                    nextEntry = queue.next();
+                    nextEntry = queue.Next();
 
                     if (nextEntry == null)
                         continue;
@@ -396,18 +400,18 @@ namespace ASC.ActiveDirectory.Novell
             {
                 var requestControls = new LdapControl[1];
                 requestControls[0] = new LdapPagedResultsControl(pageSize, cookie);
-                ldapSearchConstraints.setControls(requestControls);
+                ldapSearchConstraints.SetControls(requestControls);
                 _ldapConnection.Constraints = ldapSearchConstraints;
 
                 var res = _ldapConnection.Search(searchBase,
                     (int)scope, searchFilter, attributes, false, (LdapSearchConstraints)null);
 
-                while (res.hasMore())
+                while (res.HasMore())
                 {
                     LdapEntry nextEntry;
                     try
                     {
-                        nextEntry = res.next();
+                        nextEntry = res.Next();
 
                         if (nextEntry == null)
                             continue;
@@ -452,7 +456,7 @@ namespace ASC.ActiveDirectory.Novell
                             continue;
 
                         var response = new LdapPagedResultsResponse(control.Id,
-                            control.Critical, control.getValue());
+                            control.Critical, (sbyte[])(Array)control.GetValue());
 
                         cookie = response.Cookie;
                     }
@@ -484,12 +488,12 @@ namespace ASC.ActiveDirectory.Novell
                 var ldapSearchResults = _ldapConnection.Search("", LdapConnection.ScopeBase, LdapConstants.OBJECT_FILTER,
                     new[] { "*", "supportedControls", "supportedCapabilities" }, false, ldapSearchConstraints);
 
-                while (ldapSearchResults.hasMore())
+                while (ldapSearchResults.HasMore())
                 {
                     LdapEntry nextEntry;
                     try
                     {
-                        nextEntry = ldapSearchResults.next();
+                        nextEntry = ldapSearchResults.Next();
 
                         if (nextEntry == null)
                             continue;
@@ -500,7 +504,7 @@ namespace ASC.ActiveDirectory.Novell
                         continue;
                     }
 
-                    var attributeSet = nextEntry.getAttributeSet();
+                    var attributeSet = nextEntry.GetAttributeSet();
 
                     var ienum = attributeSet.GetEnumerator();
 
@@ -516,9 +520,8 @@ namespace ASC.ActiveDirectory.Novell
                             .Select(s =>
                             {
                                 if (Base64.IsLdifSafe(s)) return s;
-                                var tbyte = SupportClass.ToByteArray(s);
-                                s = Base64.Encode(SupportClass.ToSByteArray(tbyte));
-
+                                byte[] tbyte = ToByteArray(s);
+                                s = Encode(ToSByteArray(tbyte));
                                 return s;
                             }).ToArray();
 
@@ -534,11 +537,163 @@ namespace ASC.ActiveDirectory.Novell
             return _capabilities;
         }
 
+        #region Support_functions
+
+        private byte[] ToByteArray(string sourceString)
+        {
+            byte[] array = new byte[sourceString.Length];
+            for (int i = 0; i < sourceString.Length; i++)
+            {
+                array[i] = (byte)sourceString[i];
+            }
+
+            return array;
+        }
+
+        private sbyte[] ToSByteArray(byte[] byteArray)
+        {
+            sbyte[] array = new sbyte[byteArray.Length];
+            for (int i = 0; i < byteArray.Length; i++)
+            {
+                array[i] = (sbyte)byteArray[i];
+            }
+
+            return array;
+        }
+
+        private string Encode(sbyte[] inputBytes)
+        {
+            bool flag = false;
+            bool flag2 = false;
+            int num = inputBytes.Length;
+            if (num == 0)
+            {
+                return new StringBuilder("").ToString();
+            }
+
+            int num2 = (num % 3 != 0) ? (num / 3 + 1) : (num / 3);
+            if (num % 3 == 1)
+            {
+                flag2 = true;
+            }
+            else if (num % 3 == 2)
+            {
+                flag = true;
+            }
+
+            char[] array = new char[num2 * 4];
+            int num3 = 0;
+            int num4 = 0;
+            int num5 = 1;
+            while (num3 < num)
+            {
+                int num6 = 0xFF & inputBytes[num3];
+                array[num4] = emap[num6 >> 2];
+                if (num5 == num2 && flag2)
+                {
+                    array[num4 + 1] = emap[(num6 & 3) << 4];
+                    array[num4 + 2] = '=';
+                    array[num4 + 3] = '=';
+                    break;
+                }
+
+                int num7 = 0xFF & inputBytes[num3 + 1];
+                array[num4 + 1] = emap[((num6 & 3) << 4) + ((num7 & 0xF0) >> 4)];
+                if (num5 == num2 && flag)
+                {
+                    array[num4 + 2] = emap[(num7 & 0xF) << 2];
+                    array[num4 + 3] = '=';
+                    break;
+                }
+
+                int num8 = 0xFF & inputBytes[num3 + 2];
+                array[num4 + 2] = emap[((num7 & 0xF) << 2) | ((num8 & 0xC0) >> 6)];
+                array[num4 + 3] = emap[num8 & 0x3F];
+                num3 += 3;
+                num4 += 4;
+                num5++;
+            }
+
+            return new string(array);
+        }
+
+        private static readonly char[] emap = new char[64]
+        {
+            'A',
+            'B',
+            'C',
+            'D',
+            'E',
+            'F',
+            'G',
+            'H',
+            'I',
+            'J',
+            'K',
+            'L',
+            'M',
+            'N',
+            'O',
+            'P',
+            'Q',
+            'R',
+            'S',
+            'T',
+            'U',
+            'V',
+            'W',
+            'X',
+            'Y',
+            'Z',
+            'a',
+            'b',
+            'c',
+            'd',
+            'e',
+            'f',
+            'g',
+            'h',
+            'i',
+            'j',
+            'k',
+            'l',
+            'm',
+            'n',
+            'o',
+            'p',
+            'q',
+            'r',
+            's',
+            't',
+            'u',
+            'v',
+            'w',
+            'x',
+            'y',
+            'z',
+            '0',
+            '1',
+            '2',
+            '3',
+            '4',
+            '5',
+            '6',
+            '7',
+            '8',
+            '9',
+            '+',
+            '/'
+        };
+
+        #endregion
+
         private string GetLdapUniqueId(LdapEntry ldapEntry)
         {
             try
             {
-                var ldapUniqueIdAttribute = ConfigurationManagerExtension.AppSettings["ldap.unique.id"];
+                //var ldapUniqueIdAttribute = ConfigurationManagerExtension.AppSettings["ldap.unique.id"];
+
+                var ldapUniqueIdAttribute =  String.Empty; //TODO: not understand ConfigurationManagerExtension
 
                 if (ldapUniqueIdAttribute != null)
                     return ldapUniqueIdAttribute;
