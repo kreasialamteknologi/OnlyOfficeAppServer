@@ -31,6 +31,8 @@ using ASC.Common.Threading;
 using ASC.Core;
 using ASC.Core.Tenants;
 
+using Microsoft.Extensions.Options;
+
 using SecurityContext = ASC.Core.SecurityContext;
 
 namespace ASC.ActiveDirectory.ComplexOperations
@@ -70,6 +72,8 @@ namespace ASC.ActiveDirectory.ComplexOperations
         protected string Warning { get; set; }
 
         protected Tenant CurrentTenant { get; private set; }
+
+        protected IOptionsMonitor<ILog> option { get; }
 
         protected ILog Logger { get; private set; }
 
@@ -116,7 +120,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(_culture);
                 Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo(_culture);
 
-                Logger = LogManager.GetLogger("ASC");
+                Logger = option.Get("ASC");
 
                 if (LDAPSettings == null)
                 {

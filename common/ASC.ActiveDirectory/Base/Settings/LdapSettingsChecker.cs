@@ -19,10 +19,13 @@ using System;
 
 using ASC.Common.Logging;
 
+using Microsoft.Extensions.Options;
+
 namespace ASC.ActiveDirectory.Base.Settings
 {
     public abstract class LdapSettingsChecker : IDisposable
     {
+        private IOptionsMonitor<ILog> option;
         protected ILog log;
 
         public LdapUserImporter LdapImporter { get; private set; }
@@ -35,7 +38,7 @@ namespace ASC.ActiveDirectory.Base.Settings
         protected LdapSettingsChecker(LdapUserImporter importer)
         {
             LdapImporter = importer;
-            log = LogManager.GetLogger("ASC");
+            log = option.Get("ASC");
         }
 
         public abstract LdapSettingsStatus CheckSettings();

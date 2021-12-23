@@ -28,6 +28,8 @@ using ASC.ActiveDirectory.ComplexOperations;
 using ASC.Common.Logging;
 using ASC.Core;
 using ASC.Core.Users;
+
+using Microsoft.Extensions.Options;
 // ReSharper disable RedundantToStringCall
 
 namespace ASC.ActiveDirectory.Base
@@ -44,7 +46,8 @@ namespace ASC.ActiveDirectory.Base
 
         private static UserManager UserManager  { get; }
 
-        private static readonly string UnknownDomain = ConfigurationManagerExtension.AppSettings["ldap.domain"] ?? "LDAP";
+        //private static readonly string UnknownDomain = ConfigurationManagerExtension.AppSettings["ldap.domain"] ?? "LDAP";
+        private static readonly string UnknownDomain = "LDAP";
 
         public string LDAPDomain
         {
@@ -75,6 +78,7 @@ namespace ASC.ActiveDirectory.Base
 
         private List<string> _watchedNestedGroups;
 
+        private IOptionsMonitor<ILog> option;
         private readonly ILog _log;
 
         public LdapUserImporter(LdapHelper ldapHelper, LdapLocalization resource)
@@ -88,7 +92,7 @@ namespace ASC.ActiveDirectory.Base
 
             Resource = resource;
 
-            _log = LogManager.GetLogger("ASC");
+            _log = option.Get("ASC");
 
             _watchedNestedGroups = new List<string>();
         }

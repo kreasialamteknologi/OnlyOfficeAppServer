@@ -26,6 +26,8 @@ using ASC.ActiveDirectory.Base.Settings;
 using ASC.Common.Logging;
 using ASC.Security.Cryptography;
 
+using Microsoft.Extensions.Options;
+
 namespace ASC.ActiveDirectory.Base
 {
     public abstract class LdapHelper : IDisposable
@@ -35,12 +37,13 @@ namespace ASC.ActiveDirectory.Base
         private static InstanceCrypto InstanceCrypto { get; }
         public abstract bool IsConnected { get; }
 
+        private IOptionsMonitor<ILog> option;
         protected readonly ILog Log;
 
         protected LdapHelper(LdapSettings settings)
         {
             Settings = settings;
-            Log = LogManager.GetLogger("ASC");
+            Log = option.Get("ASC");
         }
 
         public abstract void Connect();

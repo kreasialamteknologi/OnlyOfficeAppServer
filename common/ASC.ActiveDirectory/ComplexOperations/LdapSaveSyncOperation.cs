@@ -47,10 +47,9 @@ namespace ASC.ActiveDirectory.ComplexOperations
         private ServiceProvider ServiceProvider { get;  }
         private SettingsManager SettingsManager { get; }
         private UserFormatter UserFormatter { get; }
-
         private WebItemSecurity WebItemSecurity { get; }
-
         private UserPhotoManager UserPhotoManager { get; }
+        private DisplayUserSettingsHelper displayUserSettingsHelper { get; }
         public LdapSaveSyncOperation(LdapSettings settings, Tenant tenant, LdapOperationType operation, LdapLocalization resource = null, string userId = null)
             : base(settings, tenant, operation, resource)
         {
@@ -440,11 +439,11 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                                 if (cleared)
                                 {
-                                    Logger.DebugFormat("GiveUsersRights() Cleared manually added user rights for '{0}'", user.DisplayUserName());
+                                    Logger.DebugFormat("GiveUsersRights() Cleared manually added user rights for '{0}'", user.DisplayUserName(displayUserSettingsHelper));
                                 }
                             }
 
-                            if (!currentAccessRights.ContainsKey(access.Key))
+                            if (!currentAccessRights.ContainsKey(access.Key))  
                             {
                                 currentAccessRights.Add(access.Key, new List<string>());
                             }
