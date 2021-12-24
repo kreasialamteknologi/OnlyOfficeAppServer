@@ -32,8 +32,9 @@ namespace ASC.ActiveDirectory.Controllers
         private PermissionContext PermissionContext { get; }
         protected CoreBaseSettings CoreBaseSettings { get; }
         private SettingsManager SettingsManager { get; }
+        private static DistributedTaskQueueOptionsManager DistributedTaskQueueOptionsManager { get; }
 
-        private static readonly DistributedTaskQueue ldapTasks = new DistributedTaskQueue("ldapOperations");
+        private static readonly DistributedTaskQueue ldapTasks = DistributedTaskQueueOptionsManager.Get("ldapOperations");
 
         private readonly ICache Cache;
 

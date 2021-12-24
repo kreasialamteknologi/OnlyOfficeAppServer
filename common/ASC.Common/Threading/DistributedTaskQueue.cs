@@ -167,33 +167,6 @@ namespace ASC.Common.Threading
             InstanceId = Process.GetCurrentProcess().Id;
         }
 
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="name">Name of queue</param>
-        /// <param name="maxThreadsCount">limit of threads count; Default: -1 - no limit</param>
-        public DistributedTaskQueue(string name, int maxThreadsCount = -1)
-        {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentNullException("name");
-            }
-
-            key = name + GetType().Name;
-            Scheduler = maxThreadsCount <= 0
-                ? TaskScheduler.Default
-                : throw new ArgumentOutOfRangeException("maxDegreeOfParallelism"); // TODO: was LimitedConcurrencyLevelTaskScheduler
-
-            notify.Subscribe((c) =>
-            {
-                CancellationTokenSource s;
-                if (cancelations.TryGetValue(c.Id, out s))
-                {
-                    s.Cancel();
-                }
-            }, CacheNotifyAction.InsertOrUpdate);
-        }
-
         public void QueueTask(DistributedTaskProgress taskProgress)
         {
             QueueTask((a, b) => taskProgress.RunJob(), taskProgress);

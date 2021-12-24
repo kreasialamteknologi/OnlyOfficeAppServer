@@ -38,13 +38,15 @@ namespace ASC.ActiveDirectory.Base
     public static class LdapNotifyHelper
     {
         private static readonly Dictionary<int, Tuple<INotifyClient, LdapNotifySource>> clients;
-        private static readonly DistributedTaskQueue ldapTasks;
         private static TenantManager TenantManager;
         private static SettingsManager SettingsManager;
         private static IContainer Builder { get; set; }
         private static INotifySource studioNotify;
         private static INotifyClient notifyClient;
         private static IServiceProvider _serviceProvider;
+        private static DistributedTaskQueueOptionsManager DistributedTaskQueueOptionsManager { get; }
+
+        private static readonly DistributedTaskQueue ldapTasks = DistributedTaskQueueOptionsManager.Get("ldapOperations");
 
         public static INotifyClient StudioNotifyClient
         {
@@ -78,7 +80,7 @@ namespace ASC.ActiveDirectory.Base
             //TODO: change AutofacConfigLoader
 
             clients = new Dictionary<int, Tuple<INotifyClient, LdapNotifySource>>();
-            ldapTasks = new DistributedTaskQueue("ldapAutoSyncOperations");
+            //ldapTasks = new DistributedTaskQueue("ldapAutoSyncOperations");
         }
 
         public static void RegisterAll()
