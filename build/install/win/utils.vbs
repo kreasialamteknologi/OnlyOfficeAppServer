@@ -183,15 +183,15 @@ Function ElasticSearchSetup
        fileContent = oRE.Replace(fileContent, " ")                           
     End if
     
-    If InStrRev(fileContent, "-Xms1g") <> 0 Then
-       oRE.Pattern = "-Xms1g"
+    If InStrRev(fileContent, "-Xms") <> 0 Then
+       oRE.Pattern = "-Xms.*"
        fileContent = oRE.Replace(fileContent, "-Xms4g")                           
     ElseIf InStrRev(fileContent, "-Xms4g") <> 0 Then
        fileContent = fileContent & Chr(13) & Chr(10) & "-Xms4g"
     End if
 
-    If InStrRev(fileContent, "-Xmx1g") <> 0 Then
-       oRE.Pattern = "-Xmx1g"
+    If InStrRev(fileContent, "-Xmx") <> 0 Then
+       oRE.Pattern = "-Xmx.*"
        fileContent = oRE.Replace(fileContent, "-Xmx4g")                           
     ElseIf InStrRev(fileContent, "-Xmx4g") <> 0 Then
        fileContent = fileContent & Chr(13) & Chr(10) & "-Xmx4g"
