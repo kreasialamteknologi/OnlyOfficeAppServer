@@ -31,6 +31,7 @@ namespace ASC.Web.Api
             DIHelper.TryAdd<SecurityController>();
             DIHelper.TryAdd<SmtpSettingsController>();
             DIHelper.TryAdd<ThirdPartyController>();
+            DIHelper.TryAdd<LdapController>();
         }
     }
 }
