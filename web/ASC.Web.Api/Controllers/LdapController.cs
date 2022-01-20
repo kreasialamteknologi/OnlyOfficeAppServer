@@ -19,32 +19,31 @@ using ASC.Web.Core.PublicResources;
 using ASC.Web.Studio.Core;
 using ASC.Web.Studio.Utility;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using Newtonsoft.Json;
 using HttpContext = Microsoft.AspNetCore.Http.HttpContext;
 
-namespace ASC.Web.Api.Controllers
+namespace ASC.Api.Settings
 {
 
-    [Scope]
-    [DefaultRoute]
-    [ApiController]
-    public partial class LdapController : ControllerBase
+    public partial class SettingsController
     {
-        private static TenantManager TenantManager { get; set; }
+        //private static TenantManager TenantManager { get; set; }
         private new HttpContext HttpContext { get; set; }
         private SecurityContext SecurityContext { get; }
-        private IServiceProvider ServiceProvider { get; }
-        private PermissionContext PermissionContext { get; }
-        protected CoreBaseSettings CoreBaseSettings { get; }
-        private SettingsManager SettingsManager { get; }
+        //private IServiceProvider ServiceProvider { get; }
+        //private PermissionContext PermissionContext { get; }
+        //protected CoreBaseSettings CoreBaseSettings { get; }
+        //private SettingsManager SettingsManager { get; }
         private static DistributedTaskQueueOptionsManager DistributedTaskQueueOptionsManager { get; }
 
         private static readonly DistributedTaskQueue ldapTasks = DistributedTaskQueueOptionsManager.Get("ldapOperations");
 
         private readonly ICache Cache;
 
+        /*
         public LdapController(TenantManager tenantManager, HttpContext httpContext, SecurityContext securityContext, IServiceProvider serviceProvider, PermissionContext permissionContext, CoreBaseSettings coreBaseSettings, SettingsManager settingsManager, DistributedTaskQueue distributedTaskQueue, ICache cache)
         {
             TenantManager = tenantManager;
@@ -56,6 +55,7 @@ namespace ASC.Web.Api.Controllers
             SettingsManager = settingsManager;
             Cache = cache;
         }
+        */
 
 
 
@@ -70,7 +70,7 @@ namespace ASC.Web.Api.Controllers
         /// <category>LDAP</category>
         /// <returns>LDAP settings</returns>
         [Read("ldap")]
-            public LdapSettings GetLdapSettings()
+        public LdapSettings GetLdapSettings()
             {
                 CheckLdapPermissions();
 
@@ -393,7 +393,7 @@ namespace ASC.Web.Api.Controllers
                 return new LdapSettings().GetDefault(ServiceProvider) as LdapSettings;
             }
 
-            private static LdapOperationStatus ToLdapOperationStatus()
+            private LdapOperationStatus ToLdapOperationStatus()
             {
                 var operations = ldapTasks.GetTasks().ToList();
 
