@@ -114,7 +114,7 @@ namespace Novell.Directory.Ldap.Controls
                 }
                 catch (Exception e)
                 {
-                    //Logger.Log.WarnFormat("Could not register response control for LdapPagedResultsControl.", e);
+                    //Logger.Log.WarnFormat("Could not register response control for LdapPagedResultsControl.", e); // TODO: log
                 }
             }
         }

@@ -114,9 +114,9 @@ namespace ASC.Api.Settings
                     settings = new LdapCronSettings().GetDefault(ServiceProvider) as LdapCronSettings;
 
                 if (string.IsNullOrEmpty(settings.Cron))
-                    return null;
+                    return null; // TODO: Need to process the response.
 
-                return settings.Cron;
+            return settings.Cron;
             }
 
             /// <summary>
