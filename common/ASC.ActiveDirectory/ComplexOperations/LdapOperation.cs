@@ -37,7 +37,7 @@ using SecurityContext = ASC.Core.SecurityContext;
 
 namespace ASC.ActiveDirectory.ComplexOperations
 {
-    public abstract class LdapOperation : IDisposable
+    public abstract class LdapOperation : DistributedTask ,IDisposable
     {
         public const string OWNER = "LDAPOwner";
         public const string OPERATION_TYPE = "LDAPOperationType";

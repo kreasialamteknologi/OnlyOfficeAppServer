@@ -37,9 +37,9 @@ namespace ASC.Api.Settings
         //private PermissionContext PermissionContext { get; }
         //protected CoreBaseSettings CoreBaseSettings { get; }
         //private SettingsManager SettingsManager { get; }
-        private static DistributedTaskQueueOptionsManager DistributedTaskQueueOptionsManager { get; }
+        //private static DistributedTaskQueueOptionsManager DistributedTaskQueueOptionsManager;
 
-        private static readonly DistributedTaskQueue ldapTasks = DistributedTaskQueueOptionsManager.Get("ldapOperations");
+        //private static readonly DistributedTaskQueue ldapTasks = DistributedTaskQueueOptionsManager.Get<LdapOperation>();
 
         private readonly ICache Cache;
 

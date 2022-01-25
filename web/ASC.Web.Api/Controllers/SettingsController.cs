@@ -38,12 +38,14 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
 
+using ASC.ActiveDirectory.ComplexOperations;
 using ASC.Api.Collections;
 using ASC.Api.Core;
 using ASC.Api.Utils;
 using ASC.Common;
 using ASC.Common.Caching;
 using ASC.Common.Logging;
+using ASC.Common.Threading;
 using ASC.Common.Utils;
 using ASC.Core;
 using ASC.Core.Billing;
@@ -108,7 +110,7 @@ namespace ASC.Api.Settings
         //private const int ONE_THREAD = 1;
 
         //private static readonly DistributedTaskQueue quotaTasks = new DistributedTaskQueue("quotaOperations", ONE_THREAD);
-        //private static DistributedTaskQueue LDAPTasks { get; } = new DistributedTaskQueue("ldapOperations");
+        private DistributedTaskQueue ldapTasks { get; } //= new DistributedTaskQueue("ldapOperations");
         //private static DistributedTaskQueue SMTPTasks { get; } = new DistributedTaskQueue("smtpOperations");
         public Tenant Tenant { get { return ApiContext.Tenant; } }
         public ApiContext ApiContext { get; }
@@ -234,7 +236,8 @@ namespace ASC.Api.Settings
             PasswordHasher passwordHasher,
             PaymentManager paymentManager,
             DbWorker dbWorker,
-            Constants constants)
+            Constants constants,
+            DistributedTaskQueueOptionsManager DistributedTaskQueueOptionsManager)
         {
             Log = option.Get("ASC.Api");
             WebHostEnvironment = webHostEnvironment;
@@ -297,6 +300,7 @@ namespace ASC.Api.Settings
             PaymentManager = paymentManager;
             WebhookDbWorker = dbWorker;
             Constants = constants;
+            ldapTasks = DistributedTaskQueueOptionsManager.Get<LdapOperation>();
         }
 
         [Read("", Check = false)]
