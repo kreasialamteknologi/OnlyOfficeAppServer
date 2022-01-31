@@ -2,6 +2,7 @@ using System.Text;
 
 using ASC.ActiveDirectory.Controllers;
 using ASC.Api.Core;
+using ASC.Common;
 using ASC.Web.Studio.Core.Notify;
 
 using Microsoft.AspNetCore.Builder;
@@ -13,8 +14,13 @@ using Microsoft.Extensions.Hosting;
 namespace ASC.ActiveDirectory
 {
     public class Startup : BaseStartup
-    { 
-        
+    {
+
+        public override bool ConfirmAddScheme { get => true; }
+        public override bool AddControllersAsServices { get => true; }
+        public override bool AddAndUseSession { get => true; }
+
+
 
         public Startup(IConfiguration configuration, IHostEnvironment hostEnvironment)
             : base(configuration, hostEnvironment)
@@ -26,7 +32,7 @@ namespace ASC.ActiveDirectory
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            services.AddMemoryCache();
+            services.AddDistributedMemoryCache();
 
             base.ConfigureServices(services);
 
@@ -38,10 +44,10 @@ namespace ASC.ActiveDirectory
         public override void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseCors(builder =>
-                builder
-                    .AllowAnyOrigin()
-                    .AllowAnyHeader()
-                    .AllowAnyMethod());
+                 builder
+                     .AllowAnyOrigin()
+                     .AllowAnyHeader()
+                     .AllowAnyMethod());
 
             base.Configure(app, env);
         }
