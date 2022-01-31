@@ -101,7 +101,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ASC.Webhooks.Core", "common
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ASC.Webhooks.Service", "common\services\ASC.Webhooks.Service\ASC.Webhooks.Service.csproj", "{DAE2912D-1465-4D60-B1D7-90EE835003E4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ASC.ActiveDirectory", "common\ASC.ActiveDirectory\ASC.ActiveDirectory.csproj", "{E767D834-8D6F-4F1B-B4BF-9E96DF82FF91}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ASC.ActiveDirectory", "common\ASC.ActiveDirectory\ASC.ActiveDirectory.csproj", "{E767D834-8D6F-4F1B-B4BF-9E96DF82FF91}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

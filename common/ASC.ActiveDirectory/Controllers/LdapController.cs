@@ -28,6 +28,7 @@ using HttpContext = Microsoft.AspNetCore.Http.HttpContext;
 
 namespace ASC.ActiveDirectory.Controllers
 {
+
     [Scope]
     [DefaultRoute]
     [ApiController]
