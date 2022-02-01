@@ -42,7 +42,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
     {
         private readonly LdapChangeCollection _ldapChanges;
         private readonly UserInfo _currentUser;
-        private static UserManager UserManager { get; }
+        private UserManager UserManager { get; }
         private TenantManager TenantManager { get; }
         private ServiceProvider ServiceProvider { get;  }
         private SettingsManager SettingsManager { get; }
@@ -763,7 +763,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
             }
         }
 
-        private static UserInfo SearchDbUserBySid(string sid)
+        private UserInfo SearchDbUserBySid(string sid)
         {
             if (string.IsNullOrEmpty(sid))
                 return Constants.LostUser;

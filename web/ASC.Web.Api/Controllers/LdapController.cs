@@ -14,13 +14,13 @@ using ASC.Core;
 using ASC.Core.Billing;
 using ASC.Core.Common.Settings;
 using ASC.Notify.Cron;
+using ASC.Web.Api.Models;
 using ASC.Web.Api.Routing;
 using ASC.Web.Core.PublicResources;
 using ASC.Web.Studio.Core;
 using ASC.Web.Studio.Utility;
 
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+
 
 using Newtonsoft.Json;
 using HttpContext = Microsoft.AspNetCore.Http.HttpContext;
@@ -31,7 +31,7 @@ namespace ASC.Api.Settings
     public partial class SettingsController
     {
         //private static TenantManager TenantManager { get; set; }
-        private new HttpContext HttpContext { get; set; }
+        //private new HttpContext HttpContext { get; set; }
         private SecurityContext SecurityContext { get; }
         //private IServiceProvider ServiceProvider { get; }
         //private PermissionContext PermissionContext { get; }
@@ -128,9 +128,11 @@ namespace ASC.Api.Settings
             /// <category>LDAP</category>
             /// <param name="cron">Cron expression</param>
             [Create("ldap/cron")]
-            public void SetLdapCronSettings(string cron)
+            public void SetLdapCronSettings(CronModel cronModel)
             {
                 CheckLdapPermissions();
+
+                string cron = cronModel.Cron;
 
                 if (!string.IsNullOrEmpty(cron))
                 {
@@ -269,7 +271,7 @@ namespace ASC.Api.Settings
             /// <param name="acceptCertificate">Specifies if the errors of checking certificates are allowed (true) or not (false)</param>
             /// <returns>Operation status</returns>
             [Create("ldap")]
-            public LdapOperationStatus SaveLdapSettings(string settings, bool acceptCertificate)
+            public LdapOperationStatus SaveLdapSettings(LdapModel model)
             {
                 CheckLdapPermissions();
 
@@ -281,9 +283,9 @@ namespace ASC.Api.Settings
                     return GetStartProcessError();
                 }
 
-                var ldapSettings = JsonConvert.DeserializeObject<LdapSettings>(settings);
+                var ldapSettings = JsonConvert.DeserializeObject<LdapSettings>(model.Settings);
 
-                ldapSettings.AcceptCertificate = acceptCertificate;
+                ldapSettings.AcceptCertificate = model.AcceptCertificate;
 
                 if (!ldapSettings.EnableLdapAuthentication)
                 {
@@ -320,7 +322,7 @@ namespace ASC.Api.Settings
             /// <param name="acceptCertificate">Specifies if the errors of checking certificates are allowed (true) or not (false)</param>
             /// <returns>Operation status</returns>
             [Create("ldap/save/test")]
-            public LdapOperationStatus TestLdapSave(string settings, bool acceptCertificate)
+            public LdapOperationStatus TestLdapSave(LdapModel model)
             {
                 CheckLdapPermissions();
 
@@ -346,9 +348,9 @@ namespace ASC.Api.Settings
                     return GetStartProcessError();
                 }
 
-                var ldapSettings = JsonConvert.DeserializeObject<LdapSettings>(settings);
+                var ldapSettings = JsonConvert.DeserializeObject<LdapSettings>(model.Settings);
 
-                ldapSettings.AcceptCertificate = acceptCertificate;
+                ldapSettings.AcceptCertificate = model.AcceptCertificate;
 
                 var ldapLocalization = new LdapLocalization(Resource.ResourceManager);
 
