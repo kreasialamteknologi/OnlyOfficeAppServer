@@ -24,6 +24,7 @@ using System.Text;
 using ASC.ActiveDirectory.Base.Settings;
 using ASC.ActiveDirectory.ComplexOperations.Data;
 using ASC.ActiveDirectory.Novell.Exceptions;
+using ASC.Common;
 using ASC.Core;
 using ASC.Core.Common.Settings;
 using ASC.Core.Tenants;
@@ -38,23 +39,16 @@ using Newtonsoft.Json;
 
 namespace ASC.ActiveDirectory.ComplexOperations
 {
+    [Scope]
     public class LdapSaveSyncOperation : LdapOperation
     {
         private readonly LdapChangeCollection _ldapChanges;
         private readonly UserInfo _currentUser;
-        private UserManager UserManager { get; }
-        private TenantManager TenantManager { get; }
-        private ServiceProvider ServiceProvider { get;  }
-        private SettingsManager SettingsManager { get; }
-        private UserFormatter UserFormatter { get; }
-        private WebItemSecurity WebItemSecurity { get; }
-        private UserPhotoManager UserPhotoManager { get; }
-        private DisplayUserSettingsHelper displayUserSettingsHelper { get; }
-        public LdapSaveSyncOperation(LdapSettings settings, Tenant tenant, LdapOperationType operation, LdapLocalization resource = null, string userId = null)
+        public LdapSaveSyncOperation(LdapSettings settings, Tenant tenant, LdapOperationType operation, LdapLocalization resource = null, UserInfo user = null)
             : base(settings, tenant, operation, resource)
         {
             _ldapChanges = new LdapChangeCollection { Tenant = tenant };
-            _currentUser = userId != null ? UserManager.GetUsers(Guid.Parse(userId)) : null;
+            _currentUser = user != null ? user : null;
         }
 
         protected override void Do()

@@ -17,27 +17,32 @@
 
 using System;
 using System.Globalization;
-using System.Linq;
 using System.Security;
-using System.Threading;
-using System.Threading.Tasks;
 
 using ASC.ActiveDirectory.Base;
 using ASC.ActiveDirectory.Base.Settings;
+using ASC.ActiveDirectory.ComplexOperations.Data;
 using ASC.ActiveDirectory.Novell;
+using ASC.Common;
 using ASC.Common.Logging;
 using ASC.Common.Security.Authorizing;
 using ASC.Common.Threading;
 using ASC.Core;
+using ASC.Core.Common.Settings;
 using ASC.Core.Tenants;
+using ASC.Core.Users;
+using ASC.Web.Core;
+using ASC.Web.Core.Users;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 using SecurityContext = ASC.Core.SecurityContext;
 
 namespace ASC.ActiveDirectory.ComplexOperations
 {
-    public abstract class LdapOperation : DistributedTask ,IDisposable
+    [Singletone(Additional = typeof(LdapOperationExtension))]
+    public abstract class LdapOperation : DistributedTaskProgress, IDisposable
     {
         public const string OWNER = "LDAPOwner";
         public const string OPERATION_TYPE = "LDAPOperationType";
@@ -51,13 +56,20 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
         private readonly string _culture;
 
-        private TenantManager TenantManager { get; }
-        private SecurityContext SecurityContext { get; }
-        public LdapSettings LDAPSettings { get; private set; }
+        protected UserManager UserManager { get; }
+        protected IServiceProvider ServiceProvider { get; }
+        protected TenantManager TenantManager { get; }
+        protected SettingsManager SettingsManager { get; }
+        protected UserFormatter UserFormatter { get; }
+        protected WebItemSecurity WebItemSecurity { get; }
+        protected UserPhotoManager UserPhotoManager { get; }
+        protected DisplayUserSettingsHelper displayUserSettingsHelper { get; }
+        protected SecurityContext SecurityContext { get; }
+        protected LdapSettings LDAPSettings { get; private set; }
 
-        public LdapUserImporter Importer { get; private set; }
+        protected LdapUserImporter Importer { get; private set; }
 
-        public LdapUserManager LDAPUserManager { get; private set; }
+        protected LdapUserManager LDAPUserManager { get; private set; }
 
         protected DistributedTask TaskInfo { get; private set; }
 
@@ -83,6 +95,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
         public static LdapLocalization Resource { get; private set; }
 
+        
         protected LdapOperation(LdapSettings settings, Tenant tenant, LdapOperationType operationType, LdapLocalization resource = null)
         {
             CurrentTenant = tenant;
@@ -107,13 +120,20 @@ namespace ASC.ActiveDirectory.ComplexOperations
             LDAPUserManager = new LdapUserManager(Resource);
         }
 
+        
+
         public void RunJob(DistributedTask _, CancellationToken cancellationToken)
         {
             try
             {
                 CancellationToken = cancellationToken;
 
-                TenantManager.SetCurrentTenant(CurrentTenant);
+                using var scope = ServiceProvider.CreateScope();
+                var scopeClass = scope.ServiceProvider.GetService<LdapOperationScope>();
+
+                var (tenantManager, usermanager, coreBaseSettings) = scopeClass;
+
+                TenantManager.SetCurrentTenant(tenantManager.GetCurrentTenant());
 
                 SecurityContext.AuthenticateMe(Core.Configuration.Constants.CoreSystem);
 

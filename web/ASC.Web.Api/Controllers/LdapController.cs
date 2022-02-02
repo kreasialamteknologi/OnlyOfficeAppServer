@@ -32,7 +32,7 @@ namespace ASC.Api.Settings
     {
         //private static TenantManager TenantManager { get; set; }
         //private new HttpContext HttpContext { get; set; }
-        private SecurityContext SecurityContext { get; }
+        //private SecurityContext SecurityContext { get; }
         //private IServiceProvider ServiceProvider { get; }
         //private PermissionContext PermissionContext { get; }
         //protected CoreBaseSettings CoreBaseSettings { get; }
@@ -41,7 +41,7 @@ namespace ASC.Api.Settings
 
         //private static readonly DistributedTaskQueue ldapTasks = DistributedTaskQueueOptionsManager.Get<LdapOperation>();
 
-        private readonly ICache Cache;
+        //private readonly ICache Cache;
 
         /*
         public LdapController(TenantManager tenantManager, HttpContext httpContext, SecurityContext securityContext, IServiceProvider serviceProvider, PermissionContext permissionContext, CoreBaseSettings coreBaseSettings, SettingsManager settingsManager, DistributedTaskQueue distributedTaskQueue, ICache cache)
@@ -204,10 +204,12 @@ namespace ASC.Api.Settings
                 var ldapLocalization = new LdapLocalization(Resource.ResourceManager);
 
                 var tenant = TenantManager.GetCurrentTenant();
+            
+                var user = UserManager.GetUsers(AuthContext.CurrentAccount.ID);
 
                 Cache.Insert("REWRITE_URL" + tenant.TenantId, HttpContext.Request.GetUrlRewriter().ToString(), TimeSpan.FromMinutes(5));
 
-                var op = new LdapSaveSyncOperation(ldapSettings, tenant, LdapOperationType.Sync, ldapLocalization, SecurityContext.CurrentAccount.ID.ToString());
+                var op = new LdapSaveSyncOperation(ldapSettings, tenant, LdapOperationType.Sync, ldapLocalization, user);
 
                 return QueueTask(op);
             }
@@ -303,10 +305,11 @@ namespace ASC.Api.Settings
                 var ldapLocalization = new LdapLocalization(Resource.ResourceManager, WebstudioNotifyPatternResource.ResourceManager);
 
                 var tenant = TenantManager.GetCurrentTenant();
+                var user = UserManager.GetUsers(AuthContext.CurrentAccount.ID);
 
                 Cache.Insert("REWRITE_URL" + tenant.TenantId, HttpContext.Request.GetUrlRewriter().ToString(), TimeSpan.FromMinutes(5));
 
-                var op = new LdapSaveSyncOperation(ldapSettings, tenant, LdapOperationType.Save, ldapLocalization, SecurityContext.CurrentAccount.ID.ToString());
+                var op = new LdapSaveSyncOperation(ldapSettings, tenant, LdapOperationType.Save, ldapLocalization, user);
 
                 return QueueTask(op);
             }
@@ -355,10 +358,11 @@ namespace ASC.Api.Settings
                 var ldapLocalization = new LdapLocalization(Resource.ResourceManager);
 
                 var tenant = TenantManager.GetCurrentTenant();
+                var user = UserManager.GetUsers(AuthContext.CurrentAccount.ID);
 
                 Cache.Insert("REWRITE_URL" + tenant.TenantId, HttpContext.Request.GetUrlRewriter().ToString(), TimeSpan.FromMinutes(5));
 
-                var op = new LdapSaveSyncOperation(ldapSettings, tenant, LdapOperationType.SaveTest, ldapLocalization, SecurityContext.CurrentAccount.ID.ToString());
+                var op = new LdapSaveSyncOperation(ldapSettings, tenant, LdapOperationType.SaveTest, ldapLocalization, user);
 
                 return QueueTask(op);
             }

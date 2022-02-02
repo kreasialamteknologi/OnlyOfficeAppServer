@@ -100,6 +100,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
+using SecurityContext = ASC.Core.SecurityContext;
+
 namespace ASC.Api.Settings
 {
     [Scope]
@@ -174,6 +176,8 @@ namespace ASC.Api.Settings
         private PaymentManager PaymentManager { get; }
         private DbWorker WebhookDbWorker { get; }
         public Constants Constants { get; }
+        private ICache Cache { get; }
+        private SecurityContext SecurityContext { get; }
 
         public SettingsController(
             IOptionsMonitor<ILog> option,
@@ -237,7 +241,9 @@ namespace ASC.Api.Settings
             PaymentManager paymentManager,
             DbWorker dbWorker,
             Constants constants,
-            DistributedTaskQueueOptionsManager DistributedTaskQueueOptionsManager)
+            DistributedTaskQueueOptionsManager DistributedTaskQueueOptionsManager,
+            ICache cache,
+            SecurityContext securityContext)
         {
             Log = option.Get("ASC.Api");
             WebHostEnvironment = webHostEnvironment;
@@ -301,6 +307,8 @@ namespace ASC.Api.Settings
             WebhookDbWorker = dbWorker;
             Constants = constants;
             ldapTasks = DistributedTaskQueueOptionsManager.Get<LdapOperation>();
+            Cache = cache;
+            SecurityContext = securityContext;
         }
 
         [Read("", Check = false)]
