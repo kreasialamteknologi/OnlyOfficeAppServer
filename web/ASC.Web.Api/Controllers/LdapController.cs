@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Web;
 
+using ASC.ActiveDirectory;
 using ASC.ActiveDirectory.Base;
 using ASC.ActiveDirectory.Base.Data;
 using ASC.ActiveDirectory.Base.Settings;

@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using ASC.ActiveDirectory.ComplexOperations;
-using ASC.Common;
+﻿using ASC.Common;
 using ASC.Common.Threading;
 using ASC.Core;
 
-namespace ASC.ActiveDirectory.ComplexOperations
+namespace ASC.ActiveDirectory
 {
     [Scope]
     internal class LdapOperationScope
@@ -42,7 +35,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
         public static void Register(DIHelper services)
         {
             services.TryAdd<LdapOperationScope>();
-            //services.AddDistributedTaskQueueService<LdapOperation>(5);
+            services.AddDistributedTaskQueueService<LdapOperation>(5);
         }
     }
 

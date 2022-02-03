@@ -21,7 +21,7 @@ using System.Security;
 
 using ASC.ActiveDirectory.Base;
 using ASC.ActiveDirectory.Base.Settings;
-using ASC.ActiveDirectory.ComplexOperations.Data;
+using ASC.ActiveDirectory.ComplexOperations;
 using ASC.ActiveDirectory.Novell;
 using ASC.Common;
 using ASC.Common.Logging;
@@ -39,8 +39,9 @@ using Microsoft.Extensions.Options;
 
 using SecurityContext = ASC.Core.SecurityContext;
 
-namespace ASC.ActiveDirectory.ComplexOperations
+namespace ASC.ActiveDirectory
 {
+    
     [Singletone(Additional = typeof(LdapOperationExtension))]
     public abstract class LdapOperation : DistributedTaskProgress, IDisposable
     {
@@ -63,7 +64,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
         protected UserFormatter UserFormatter { get; }
         protected WebItemSecurity WebItemSecurity { get; }
         protected UserPhotoManager UserPhotoManager { get; }
-        protected DisplayUserSettingsHelper displayUserSettingsHelper { get; }
+        protected DisplayUserSettingsHelper DisplayUserSettingsHelper { get; }
         protected SecurityContext SecurityContext { get; }
         protected LdapSettings LDAPSettings { get; private set; }
 
@@ -87,7 +88,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
         protected IOptionsMonitor<ILog> option { get; }
 
-        protected ILog Logger { get; private set; }
+        //protected ILog Logger { get; private set; }
 
         protected CancellationToken CancellationToken { get; private set; }
 
@@ -95,8 +96,13 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
         public static LdapLocalization Resource { get; private set; }
 
-        
-        protected LdapOperation(LdapSettings settings, Tenant tenant, LdapOperationType operationType, LdapLocalization resource = null)
+        public LdapOperation(IServiceProvider serviceProvider)
+        {
+            ServiceProvider = serviceProvider;
+        }
+
+
+        protected LdapOperation(LdapSettings settings, Tenant tenant, LdapOperationType operationType,  LdapLocalization resource = null)
         {
             CurrentTenant = tenant;
 
@@ -120,14 +126,14 @@ namespace ASC.ActiveDirectory.ComplexOperations
             LDAPUserManager = new LdapUserManager(Resource);
         }
 
-        
+
 
         public void RunJob(DistributedTask _, CancellationToken cancellationToken)
         {
             try
             {
                 CancellationToken = cancellationToken;
-
+                 
                 using var scope = ServiceProvider.CreateScope();
                 var scopeClass = scope.ServiceProvider.GetService<LdapOperationScope>();
 
@@ -140,12 +146,12 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(_culture);
                 Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo(_culture);
 
-                Logger = option.Get("ASC");
+                //Logger = option.Get("ASC");
 
                 if (LDAPSettings == null)
                 {
                     Error = Resource.LdapSettingsErrorCantGetLdapSettings;
-                    Logger.Error("Can't save default LDAP settings.");
+                    //Logger.Error("Can't save default LDAP settings.");
                     return;
                 }
 
@@ -154,18 +160,18 @@ namespace ASC.ActiveDirectory.ComplexOperations
                     case LdapOperationType.Save:
                     case LdapOperationType.SaveTest:
 
-                        Logger.InfoFormat("Start '{0}' operation",
-                            Enum.GetName(typeof(LdapOperationType), OperationType));
+                        //Logger.InfoFormat("Start '{0}' operation",
+                           // Enum.GetName(typeof(LdapOperationType), OperationType));
 
                         SetProgress(1, Resource.LdapSettingsStatusCheckingLdapSettings);
 
-                        Logger.Debug("PrepareSettings()");
+                        //Logger.Debug("PrepareSettings()");
 
                         PrepareSettings(LDAPSettings);
 
                         if (!string.IsNullOrEmpty(Error))
                         {
-                            Logger.DebugFormat("PrepareSettings() Error: {0}", Error);
+                            //Logger.DebugFormat("PrepareSettings() Error: {0}", Error);
                             return;
                         }
 
@@ -189,7 +195,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                                 Error = GetError(result);
 
-                                Logger.DebugFormat("ldapSettingsChecker.CheckSettings() Error: {0}", Error);
+                                //Logger.DebugFormat("ldapSettingsChecker.CheckSettings() Error: {0}", Error);
 
                                 return;
                             }
@@ -198,8 +204,8 @@ namespace ASC.ActiveDirectory.ComplexOperations
                         break;
                     case LdapOperationType.Sync:
                     case LdapOperationType.SyncTest:
-                        Logger.InfoFormat("Start '{0}' operation",
-                            Enum.GetName(typeof(LdapOperationType), OperationType));
+                        //Logger.InfoFormat("Start '{0}' operation",
+                          //  Enum.GetName(typeof(LdapOperationType), OperationType));
 
                         Importer = new NovellLdapUserImporter(LDAPSettings, Resource);
                         break;
@@ -212,7 +218,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
             catch (AuthorizingException authError)
             {
                 Error = Resource.ErrorAccessDenied;
-                Logger.Error(Error, new SecurityException(Error, authError));
+                //Logger.Error(Error, new SecurityException(Error, authError));
             }
             catch (AggregateException ae)
             {
@@ -221,17 +227,17 @@ namespace ASC.ActiveDirectory.ComplexOperations
             catch (TenantQuotaException e)
             {
                 Error = Resource.LdapSettingsTenantQuotaSettled;
-                Logger.ErrorFormat("TenantQuotaException. {0}", e);
+                //Logger.ErrorFormat("TenantQuotaException. {0}", e);
             }
             catch (FormatException e)
             {
                 Error = Resource.LdapSettingsErrorCantCreateUsers;
-                Logger.ErrorFormat("FormatException error. {0}", e);
+                //Logger.ErrorFormat("FormatException error. {0}", e);
             }
             catch (Exception e)
             {
                 Error = Resource.LdapSettingsInternalServerError;
-                Logger.ErrorFormat("Internal server error. {0}", e);
+                //Logger.ErrorFormat("Internal server error. {0}", e);
             }
             finally
             {
@@ -244,7 +250,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 }
                 catch (Exception ex)
                 {
-                    Logger.ErrorFormat("LdapOperation finalization problem. {0}", ex);
+                    //Logger.ErrorFormat("LdapOperation finalization problem. {0}", ex);
                 }
             }
         }
@@ -288,7 +294,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
             if (currentSource != null)
                 Source = currentSource;
 
-            Logger.InfoFormat(PROGRESS_STRING, Progress, Status, Source);
+            //Logger.InfoFormat(PROGRESS_STRING, Progress, Status, Source);
 
             PublishTaskInfo();
         }
@@ -305,7 +311,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
         {
             if (settings == null)
             {
-                Logger.Error("Wrong LDAP settings were received from client.");
+                //Logger.Error("Wrong LDAP settings were received from client.");
                 Error = Resource.LdapSettingsErrorCantGetLdapSettings;
                 return;
             }
@@ -320,7 +326,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 settings.Server = settings.Server.Trim();
             else
             {
-                Logger.Error("settings.Server is null or empty.");
+                //Logger.Error("settings.Server is null or empty.");
                 Error = Resource.LdapSettingsErrorCantGetLdapSettings;
                 return;
             }
@@ -332,7 +338,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 settings.UserDN = settings.UserDN.Trim();
             else
             {
-                Logger.Error("settings.UserDN is null or empty.");
+                //Logger.Error("settings.UserDN is null or empty.");
                 Error = Resource.LdapSettingsErrorCantGetLdapSettings;
                 return;
             }
@@ -341,7 +347,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 settings.LoginAttribute = settings.LoginAttribute.Trim();
             else
             {
-                Logger.Error("settings.LoginAttribute is null or empty.");
+                //Logger.Error("settings.LoginAttribute is null or empty.");
                 Error = Resource.LdapSettingsErrorCantGetLdapSettings;
                 return;
             }
@@ -370,7 +376,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                     settings.GroupDN = settings.GroupDN.Trim();
                 else
                 {
-                    Logger.Error("settings.GroupDN is null or empty.");
+                    //Logger.Error("settings.GroupDN is null or empty.");
                     Error = Resource.LdapSettingsErrorCantGetLdapSettings;
                     return;
                 }
@@ -382,7 +388,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                     settings.GroupAttribute = settings.GroupAttribute.Trim();
                 else
                 {
-                    Logger.Error("settings.GroupAttribute is null or empty.");
+                    //Logger.Error("settings.GroupAttribute is null or empty.");
                     Error = Resource.LdapSettingsErrorCantGetLdapSettings;
                     return;
                 }
@@ -391,7 +397,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                     settings.UserAttribute = settings.UserAttribute.Trim();
                 else
                 {
-                    Logger.Error("settings.UserAttribute is null or empty.");
+                    //Logger.Error("settings.UserAttribute is null or empty.");
                     Error = Resource.LdapSettingsErrorCantGetLdapSettings;
                     return;
                 }
@@ -407,7 +413,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 settings.Login = settings.Login.Trim();
             else
             {
-                Logger.Error("settings.Login is null or empty.");
+                //Logger.Error("settings.Login is null or empty.");
                 Error = Resource.LdapSettingsErrorCantGetLdapSettings;
                 return;
             }
@@ -420,14 +426,14 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                     if (settings.PasswordBytes == null)
                     {
-                        Logger.Error("settings.PasswordBytes is null.");
+                        //Logger.Error("settings.PasswordBytes is null.");
                         Error = Resource.LdapSettingsErrorCantGetLdapSettings;
                         return;
                     }
                 }
                 else
                 {
-                    Logger.Error("settings.Password is null or empty.");
+                    //Logger.Error("settings.Password is null or empty.");
                     Error = Resource.LdapSettingsErrorCantGetLdapSettings;
                     return;
                 }

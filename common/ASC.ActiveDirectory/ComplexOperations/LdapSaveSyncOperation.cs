@@ -43,12 +43,12 @@ namespace ASC.ActiveDirectory.ComplexOperations
     public class LdapSaveSyncOperation : LdapOperation
     {
         private readonly LdapChangeCollection _ldapChanges;
-        private readonly UserInfo _currentUser;
+        private readonly UserInfo? _currentUser;
         public LdapSaveSyncOperation(LdapSettings settings, Tenant tenant, LdapOperationType operation, LdapLocalization resource = null, UserInfo user = null)
             : base(settings, tenant, operation, resource)
         {
             _ldapChanges = new LdapChangeCollection { Tenant = tenant };
-            _currentUser = user != null ? user : null;
+            _currentUser = user;
         }
 
         protected override void Do()
@@ -63,7 +63,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                     if (!SettingsManager.Save(LDAPSettings))
                     {
-                        Logger.Error("Can't save LDAP settings.");
+                        //Logger.Error("Can't save LDAP settings.");
                         Error = Resource.LdapSettingsErrorCantSaveLdapSettings;
                         return;
                     }
@@ -71,7 +71,8 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                 if (LDAPSettings.EnableLdapAuthentication)
                 {
-                    if (Logger.IsDebugEnabled)
+                    /*
+                    if (//Logger.IsDebugEnabled)
                     {
                         var sb = new StringBuilder();
                         sb.AppendLine("SyncLDAP()");
@@ -89,9 +90,9 @@ namespace ASC.ActiveDirectory.ComplexOperations
                             sb.AppendLine("GroupMember: " + LDAPSettings.GroupAttribute);
                         }
 
-                        Logger.Debug(sb.ToString());
+                        //Logger.Debug(sb.ToString());
                     }
-
+                    */
                     SyncLDAP();
 
                     if (!string.IsNullOrEmpty(Error))
@@ -99,7 +100,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 }
                 else
                 {
-                    Logger.Debug("TurnOffLDAP()");
+                    //Logger.Debug("TurnOffLDAP()");
 
                     TurnOffLDAP();
 
@@ -123,26 +124,27 @@ namespace ASC.ActiveDirectory.ComplexOperations
             }
             catch (NovellLdapTlsCertificateRequestedException ex)
             {
-                Logger.ErrorFormat(
+                /*Logger.ErrorFormat(
                     "CheckSettings(acceptCertificate={0}, cert thumbprint: {1}): NovellLdapTlsCertificateRequestedException: {2}",
                     LDAPSettings.AcceptCertificate, LDAPSettings.AcceptCertificateHash, ex.ToString());
+                */
                 Error = Resource.LdapSettingsStatusCertificateVerification;
 
                 //TaskInfo.SetProperty(CERT_REQUEST, ex.CertificateConfirmRequest);
             }
             catch (TenantQuotaException e)
             {
-                Logger.ErrorFormat("TenantQuotaException. {0}", e.ToString());
+                //Logger.ErrorFormat("TenantQuotaException. {0}", e.ToString());
                 Error = Resource.LdapSettingsTenantQuotaSettled;
             }
             catch (FormatException e)
             {
-                Logger.ErrorFormat("FormatException error. {0}", e.ToString());
+                //Logger.ErrorFormat("FormatException error. {0}", e.ToString());
                 Error = Resource.LdapSettingsErrorCantCreateUsers;
             }
             catch (Exception e)
             {
-                Logger.ErrorFormat("Internal server error. {0}", e.ToString());
+                //Logger.ErrorFormat("Internal server error. {0}", e.ToString());
                 Error = Resource.LdapSettingsInternalServerError;
             }
             finally
@@ -186,7 +188,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                         existingLDAPUser.Sid = null;
                         existingLDAPUser.ConvertExternalContactsToOrdinary();
 
-                        Logger.DebugFormat("CoreContext.UserManager.SaveUserInfo({0})", existingLDAPUser.GetUserInfoString());
+                        //Logger.DebugFormat("CoreContext.UserManager.SaveUserInfo({0})", existingLDAPUser.GetUserInfoString());
 
                         UserManager.SaveUserInfo(existingLDAPUser);
                         break;
@@ -216,13 +218,13 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
             if (!LDAPSettings.GroupMembership)
             {
-                Logger.Debug("SyncLDAPUsers()");
+                //Logger.Debug("SyncLDAPUsers()");
 
                 SyncLDAPUsers();
             }
             else
             {
-                Logger.Debug("SyncLDAPUsersInGroups()");
+                //Logger.Debug("SyncLDAPUsersInGroups()");
 
                 SyncLDAPUsersInGroups();
             }
@@ -247,7 +249,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                 foreach (var guid in ph.CurrentPhotos.Keys)
                 {
-                    Logger.InfoFormat("SyncLdapAvatar() Removing photo for '{0}'", guid);
+                    //Logger.InfoFormat("SyncLdapAvatar() Removing photo for '{0}'", guid);
                     UserPhotoManager.RemovePhoto(guid);
                     UserPhotoManager.ResetThumbnailSettings(guid);
                 }
@@ -284,11 +286,11 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                 var user = UserManager.GetUserBySid(ldapUser.Sid);
 
-                Logger.DebugFormat("SyncLdapAvatar() Found photo for '{0}'", ldapUser.Sid);
+                //Logger.DebugFormat("SyncLdapAvatar() Found photo for '{0}'", ldapUser.Sid);
 
                 if (photoSettings.CurrentPhotos.ContainsKey(user.ID) && photoSettings.CurrentPhotos[user.ID] == hash)
                 {
-                    Logger.Debug("SyncLdapAvatar() Same hash, skipping.");
+                    //Logger.Debug("SyncLdapAvatar() Same hash, skipping.");
                     continue;
                 }
 
@@ -310,7 +312,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 }
                 catch
                 {
-                    Logger.DebugFormat("SyncLdapAvatar() Couldn't save photo for '{0}'", user.ID);
+                    //Logger.DebugFormat("SyncLdapAvatar() Couldn't save photo for '{0}'", user.ID);
                     if (photoSettings.CurrentPhotos.ContainsKey(user.ID))
                     {
                         photoSettings.CurrentPhotos.Remove(user.ID);
@@ -346,7 +348,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
             if (current.CurrentAccessRights == null || !current.CurrentAccessRights.Any())
             {
-                Logger.Debug("TakeUsersRights() CurrentAccessRights is empty, skipping");
+                //Logger.Debug("TakeUsersRights() CurrentAccessRights is empty, skipping");
                 return;
             }
 
@@ -358,7 +360,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                     var userId = Guid.Parse(user);
                     if (_currentUser != null && _currentUser.ID == userId)
                     {
-                        Logger.DebugFormat("TakeUsersRights() Attempting to take admin rights from yourself `{0}`, skipping", user);
+                        //Logger.DebugFormat("TakeUsersRights() Attempting to take admin rights from yourself `{0}`, skipping", user);
                         if (currentUserRights != null)
                         {
                             currentUserRights.Add(right.Key);
@@ -366,7 +368,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                     }
                     else
                     {
-                        Logger.DebugFormat("TakeUsersRights() Taking admin rights ({0}) from '{1}'", right.Key, user);
+                        //Logger.DebugFormat("TakeUsersRights() Taking admin rights ({0}) from '{1}'", right.Key, user);
                         WebItemSecurity.SetProductAdministrator(LdapSettings.AccessRightsGuids[right.Key], userId, false);
                     }
                 }
@@ -391,7 +393,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                 if (!ldapGroups.Any())
                 {
-                    Logger.DebugFormat("GiveUsersRights() No ldap groups found for ({0}) access rights, skipping", access.Key);
+                    //Logger.DebugFormat("GiveUsersRights() No ldap groups found for ({0}) access rights, skipping", access.Key);
                     continue;
                 }
 
@@ -401,13 +403,13 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                     if (gr == null)
                     {
-                        Logger.DebugFormat("GiveUsersRights() Couldn't find portal group for '{0}'", ldapGr.Sid);
+                        //Logger.DebugFormat("GiveUsersRights() Couldn't find portal group for '{0}'", ldapGr.Sid);
                         continue;
                     }
 
                     var users = UserManager.GetUsersByGroup(gr.ID);
 
-                    Logger.DebugFormat("GiveUsersRights() Found '{0}' users for group '{1}' ({2})", users.Count(), gr.Name, gr.ID);
+                    //Logger.DebugFormat("GiveUsersRights() Found '{0}' users for group '{1}' ({2})", users.Count(), gr.Name, gr.ID);
 
 
                     foreach (var user in users)
@@ -433,7 +435,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
 
                                 if (cleared)
                                 {
-                                    Logger.DebugFormat("GiveUsersRights() Cleared manually added user rights for '{0}'", user.DisplayUserName(displayUserSettingsHelper));
+                                    //Logger.DebugFormat("GiveUsersRights() Cleared manually added user rights for '{0}'", user.DisplayUserName(displayUserSettingsHelper));
                                 }
                             }
 
@@ -472,8 +474,8 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 return;
             }
 
-            Logger.DebugFormat("Importer.GetDiscoveredUsersByAttributes() Success: Users count: {0}",
-                Importer.AllDomainUsers.Count);
+            //Logger.DebugFormat("Importer.GetDiscoveredUsersByAttributes() Success: Users count: {0}",
+             //   Importer.AllDomainUsers.Count);
 
             SetProgress(20, Resource.LdapSettingsStatusRemovingOldUsers, "");
 
@@ -504,8 +506,8 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 return;
             }
 
-            Logger.DebugFormat("Importer.GetDiscoveredGroupsByAttributes() Success: Groups count: {0}",
-                Importer.AllDomainGroups.Count);
+            //Logger.DebugFormat("Importer.GetDiscoveredGroupsByAttributes() Success: Groups count: {0}",
+               // Importer.AllDomainGroups.Count);
 
             SetProgress(20, Resource.LdapSettingsStatusGettingUsersFromLdap);
 
@@ -520,8 +522,8 @@ namespace ASC.ActiveDirectory.ComplexOperations
                 return;
             }
 
-            Logger.DebugFormat("GetGroupsUsers() Success: Users count: {0}",
-                Importer.AllDomainUsers.Count);
+            //Logger.DebugFormat("GetGroupsUsers() Success: Users count: {0}",
+              //  Importer.AllDomainUsers.Count);
 
             SetProgress(30,
                 OperationType == LdapOperationType.Save || OperationType == LdapOperationType.SaveTest
@@ -748,7 +750,7 @@ namespace ASC.ActiveDirectory.ComplexOperations
                     if (dbGroupMembers.All(dbUser => groupMembersToRemove.Exists(u => u.ID.Equals(dbUser.ID)))
                         && !groupMembersToAdd.Any())
                     {
-                        _ldapChanges.SetRemoveGroupChange(dbLdapGroup, Logger);
+                        _ldapChanges.SetRemoveGroupChange(dbLdapGroup); //, Logger);
                     }
 
                     break;
@@ -854,12 +856,12 @@ namespace ASC.ActiveDirectory.ComplexOperations
                         else
                         {
                             Warning = Resource.LdapSettingsErrorRemovedYourself;
-                            Logger.DebugFormat("RemoveOldDbUsers() Attempting to exclude yourself `{0}` from group or user filters, skipping.", removedUser.ID);
+                            //Logger.DebugFormat("RemoveOldDbUsers() Attempting to exclude yourself `{0}` from group or user filters, skipping.", removedUser.ID);
                         }
 
                         removedUser.ConvertExternalContactsToOrdinary();
 
-                        Logger.DebugFormat("CoreContext.UserManager.SaveUserInfo({0})", removedUser.GetUserInfoString());
+                        //Logger.DebugFormat("CoreContext.UserManager.SaveUserInfo({0})", removedUser.GetUserInfoString());
 
                         UserManager.SaveUserInfo(removedUser/*, syncCardDav: true*/ );
                         break;

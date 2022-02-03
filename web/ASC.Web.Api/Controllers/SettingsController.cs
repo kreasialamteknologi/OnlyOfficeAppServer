@@ -38,6 +38,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
 
+using ASC.ActiveDirectory;
 using ASC.ActiveDirectory.ComplexOperations;
 using ASC.Api.Collections;
 using ASC.Api.Core;
