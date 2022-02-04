@@ -24,74 +24,73 @@ using ASC.Core.Billing;
 
 using static ASC.Web.Core.Files.DocumentService;
 
-namespace ASC.Web.Core.Files
+namespace ASC.Web.Core.Files;
+
+[Scope]
+public class DocumentServiceLicense
 {
-    [Scope]
-    public class DocumentServiceLicense
+    private static readonly TimeSpan CACHE_EXPIRATION = TimeSpan.FromMinutes(15);
+
+    private readonly ICache _cache;
+    private readonly CoreBaseSettings _coreBaseSettings;
+    private readonly FilesLinkUtility _filesLinkUtility;
+    private readonly FileUtility _fileUtility;
+
+    public DocumentServiceLicense(
+        ICache cache,
+        CoreBaseSettings coreBaseSettings,
+        FilesLinkUtility filesLinkUtility,
+        FileUtility fileUtility)
     {
-        private static readonly TimeSpan CACHE_EXPIRATION = TimeSpan.FromMinutes(15);
+        _cache = cache;
+        _coreBaseSettings = coreBaseSettings;
+        _filesLinkUtility = filesLinkUtility;
+        _fileUtility = fileUtility;
+    }
 
-        private ICache Cache { get; }
-        public CoreBaseSettings CoreBaseSettings { get; }
-        private FilesLinkUtility FilesLinkUtility { get; }
-        private FileUtility FileUtility { get; }
+    private CommandResponse GetDocumentServiceLicense()
+    {
+        if (!_coreBaseSettings.Standalone) return null;
+        if (string.IsNullOrEmpty(_filesLinkUtility.DocServiceCommandUrl)) return null;
 
-        public DocumentServiceLicense(
-            ICache cache,
-            CoreBaseSettings coreBaseSettings,
-            FilesLinkUtility filesLinkUtility,
-            FileUtility fileUtility)
+        var cacheKey = "DocumentServiceLicense";
+        var commandResponse = _cache.Get<CommandResponse>(cacheKey);
+        if (commandResponse == null)
         {
-            Cache = cache;
-            CoreBaseSettings = coreBaseSettings;
-            FilesLinkUtility = filesLinkUtility;
-            FileUtility = fileUtility;
+            commandResponse = DocumentService.CommandRequest(
+                    _fileUtility,
+                    _filesLinkUtility.DocServiceCommandUrl,
+                    DocumentService.CommandMethod.License,
+                    null,
+                    null,
+                    null,
+                    null,
+                    _fileUtility.SignatureSecret);
+            _cache.Insert(cacheKey, commandResponse, DateTime.UtcNow.Add(CACHE_EXPIRATION));
         }
 
-        private CommandResponse GetDocumentServiceLicense()
-        {
-            if (!CoreBaseSettings.Standalone) return null;
-            if (string.IsNullOrEmpty(FilesLinkUtility.DocServiceCommandUrl)) return null;
+        return commandResponse;
+    }
 
-            var cacheKey = "DocumentServiceLicense";
-            var commandResponse = Cache.Get<CommandResponse>(cacheKey);
-            if (commandResponse == null)
-            {
-                commandResponse = DocumentService.CommandRequest(
-                       FileUtility,
-                       FilesLinkUtility.DocServiceCommandUrl,
-                       DocumentService.CommandMethod.License,
-                       null,
-                       null,
-                       null,
-                       null,
-                       FileUtility.SignatureSecret);
-                Cache.Insert(cacheKey, commandResponse, DateTime.UtcNow.Add(CACHE_EXPIRATION));
-            }
+    public Dictionary<string, DateTime> GetLicenseQuota()
+    {
+        var commandResponse = GetDocumentServiceLicense();
+        if (commandResponse == null
+            || commandResponse.Quota == null
+            || commandResponse.Quota.Users == null)
+            return null;
 
-            return commandResponse;
-        }
+        var result = new Dictionary<string, DateTime>();
+        commandResponse.Quota.Users.ForEach(user => result.Add(user.UserId, user.Expire));
+        return result;
+    }
 
-        public Dictionary<string, DateTime> GetLicenseQuota()
-        {
-            var commandResponse = GetDocumentServiceLicense();
-            if (commandResponse == null
-                || commandResponse.Quota == null
-                || commandResponse.Quota.Users == null)
-                return null;
+    public License GetLicense()
+    {
+        var commandResponse = GetDocumentServiceLicense();
+        if (commandResponse == null)
+            return null;
 
-            var result = new Dictionary<string, DateTime>();
-            commandResponse.Quota.Users.ForEach(user => result.Add(user.UserId, user.Expire));
-            return result;
-        }
-
-        public License GetLicense()
-        {
-            var commandResponse = GetDocumentServiceLicense();
-            if (commandResponse == null)
-                return null;
-
-            return commandResponse.License;
-        }
+        return commandResponse.License;
     }
 }

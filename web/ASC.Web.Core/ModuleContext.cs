@@ -26,10 +26,9 @@
 
 using ASC.Web.Core.ModuleManagement.Common;
 
-namespace ASC.Web.Core
+namespace ASC.Web.Core;
+
+public class ModuleContext : WebItemContext
 {
-    public class ModuleContext : WebItemContext
-    {
-        public ISearchHandlerEx SearchHandler { get; set; }
-    }
+    public ISearchHandlerEx SearchHandler { get; set; }
 }

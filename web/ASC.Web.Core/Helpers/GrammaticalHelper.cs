@@ -26,30 +26,28 @@
 
 using System;
 
-namespace ASC.Web.Core.Helpers
+namespace ASC.Web.Core.Helpers;
+public class GrammaticalHelper
 {
-    public class GrammaticalHelper
+    public static string ChooseNumeralCase(int number, string nominative, string genitiveSingular, string genitivePlural)
     {
-        public static string ChooseNumeralCase(int number, string nominative, string genitiveSingular, string genitivePlural)
+        if (
+            string.Compare(
+                System.Threading.Thread.CurrentThread.CurrentUICulture.ThreeLetterISOLanguageName,
+                "rus", true) == 0)
         {
-            if (
-                string.Compare(
-                    System.Threading.Thread.CurrentThread.CurrentUICulture.ThreeLetterISOLanguageName,
-                    "rus", true) == 0)
-            {
-                int[] formsTable = { 2, 0, 1, 1, 1, 2, 2, 2, 2, 2 };
+            int[] formsTable = { 2, 0, 1, 1, 1, 2, 2, 2, 2, 2 };
 
-                number = Math.Abs(number);
-                var res = formsTable[((((number % 100) / 10) != 1) ? 1 : 0) * (number % 10)];
-                return res switch
-                {
-                    0 => nominative,
-                    1 => genitiveSingular,
-                    _ => genitivePlural,
-                };
-            }
-            else
-                return number == 1 ? nominative : genitivePlural;
+            number = Math.Abs(number);
+            var res = formsTable[((((number % 100) / 10) != 1) ? 1 : 0) * (number % 10)];
+            return res switch
+            {
+                0 => nominative,
+                1 => genitiveSingular,
+                _ => genitivePlural,
+            };
         }
+        else
+            return number == 1 ? nominative : genitivePlural;
     }
 }

@@ -26,12 +26,10 @@
 
 using System;
 
-namespace ASC.Web.Core.ModuleManagement.Common
+namespace ASC.Web.Core.ModuleManagement.Common;
+public interface IShortcutProvider
 {
-    public interface IShortcutProvider
-    {
-        string GetAbsoluteWebPathForShortcut(Guid shortcutID, string currentUrl);
+    string GetAbsoluteWebPathForShortcut(Guid shortcutID, string currentUrl);
 
-        bool CheckPermissions(Guid shortcutID, string currentUrl);
-    }
+    bool CheckPermissions(Guid shortcutID, string currentUrl);
 }

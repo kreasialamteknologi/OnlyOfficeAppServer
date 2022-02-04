@@ -26,14 +26,13 @@
 
 using Microsoft.AspNetCore.Http;
 
-namespace ASC.Web.Core.Security
+namespace ASC.Web.Core.Security;
+
+public class SecurityPassthroughAttribute : SecurityAttribute
 {
-    public class SecurityPassthroughAttribute : SecurityAttribute
+    public override bool CheckAuthorization(HttpContext context)
     {
-        public override bool CheckAuthorization(HttpContext context)
-        {
-            //Always authorized
-            return true;
-        }
+        //Always authorized
+        return true;
     }
 }

@@ -28,15 +28,14 @@ using System;
 
 using ASC.Web.Core.WebZones;
 
-namespace ASC.Web.Core
+namespace ASC.Web.Core;
+
+[WebZoneAttribute(WebZoneType.Nowhere)]
+public interface IModule : IWebItem
 {
-    [WebZoneAttribute(WebZoneType.Nowhere)]
-    public interface IModule : IWebItem
-    {
-        Guid ProjectId { get; }
+    Guid ProjectId { get; }
 
-        string ModuleSysName { get; }
+    string ModuleSysName { get; }
 
-        new ModuleContext Context { get; }
-    }
+    new ModuleContext Context { get; }
 }

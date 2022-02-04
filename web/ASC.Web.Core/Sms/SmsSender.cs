@@ -36,84 +36,83 @@ using ASC.Core.Tenants;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
-namespace ASC.Web.Core.Sms
+namespace ASC.Web.Core.Sms;
+
+[Scope]
+public class SmsSender
 {
-    [Scope]
-    public class SmsSender
+    private readonly IConfiguration _configuration;
+    private readonly TenantManager _tenantManager;
+    private readonly SmsProviderManager _smsProviderManager;
+    private readonly ILog _log;
+
+    public SmsSender(
+        IConfiguration configuration,
+        TenantManager tenantManager,
+        IOptionsMonitor<ILog> options,
+        SmsProviderManager smsProviderManager)
     {
-        private IConfiguration Configuration { get; }
-        private TenantManager TenantManager { get; }
-        private SmsProviderManager SmsProviderManager { get; }
-        public ILog Log { get; }
+        _configuration = configuration;
+        _tenantManager = tenantManager;
+        _smsProviderManager = smsProviderManager;
+        _log = options.CurrentValue;
+    }
 
-        public SmsSender(
-            IConfiguration configuration,
-            TenantManager tenantManager,
-            IOptionsMonitor<ILog> options,
-            SmsProviderManager smsProviderManager)
+    public bool SendSMS(string number, string message)
+    {
+        if (string.IsNullOrEmpty(number))
         {
-            Configuration = configuration;
-            TenantManager = tenantManager;
-            SmsProviderManager = smsProviderManager;
-            Log = options.CurrentValue;
+            throw new ArgumentNullException("number");
+        }
+        if (string.IsNullOrEmpty(message))
+        {
+            throw new ArgumentNullException("message");
+        }
+        if (!_smsProviderManager.Enabled())
+        {
+            throw new MethodAccessException();
         }
 
-        public bool SendSMS(string number, string message)
+        if ("log".Equals(_configuration["core:notify:postman"], StringComparison.InvariantCultureIgnoreCase))
         {
-            if (string.IsNullOrEmpty(number))
-            {
-                throw new ArgumentNullException("number");
-            }
-            if (string.IsNullOrEmpty(message))
-            {
-                throw new ArgumentNullException("message");
-            }
-            if (!SmsProviderManager.Enabled())
-            {
-                throw new MethodAccessException();
-            }
+            var tenant = _tenantManager.GetCurrentTenant(false);
+            var tenantId = tenant == null ? Tenant.DEFAULT_TENANT : tenant.TenantId;
 
-            if ("log".Equals(Configuration["core:notify:postman"], StringComparison.InvariantCultureIgnoreCase))
-            {
-                var tenant = TenantManager.GetCurrentTenant(false);
-                var tenantId = tenant == null ? Tenant.DEFAULT_TENANT : tenant.TenantId;
-
-                Log.InfoFormat("Tenant {0} send sms to phoneNumber {1} Message: {2}", tenantId, number, message);
-                return false;
-            }
-
-            number = new Regex("[^\\d+]").Replace(number, string.Empty);
-            return SmsProviderManager.SendMessage(number, message);
+            _log.InfoFormat("Tenant {0} send sms to phoneNumber {1} Message: {2}", tenantId, number, message);
+            return false;
         }
 
-        public static string GetPhoneValueDigits(string mobilePhone)
+        number = new Regex("[^\\d+]").Replace(number, string.Empty);
+        return _smsProviderManager.SendMessage(number, message);
+    }
+
+    public static string GetPhoneValueDigits(string mobilePhone)
+    {
+        var reg = new Regex(@"[^\d]");
+        mobilePhone = reg.Replace(mobilePhone ?? "", string.Empty).Trim();
+        return mobilePhone.Substring(0, Math.Min(64, mobilePhone.Length));
+    }
+
+    public static string BuildPhoneNoise(string mobilePhone)
+    {
+        if (string.IsNullOrEmpty(mobilePhone))
+            return string.Empty;
+
+        mobilePhone = GetPhoneValueDigits(mobilePhone);
+
+        const int startLen = 4;
+        const int endLen = 4;
+        if (mobilePhone.Length < startLen + endLen)
+            return mobilePhone;
+
+        var sb = new StringBuilder();
+        sb.Append("+");
+        sb.Append(mobilePhone.Substring(0, startLen));
+        for (var i = startLen; i < mobilePhone.Length - endLen; i++)
         {
-            var reg = new Regex(@"[^\d]");
-            mobilePhone = reg.Replace(mobilePhone ?? "", string.Empty).Trim();
-            return mobilePhone.Substring(0, Math.Min(64, mobilePhone.Length));
+            sb.Append("*");
         }
-
-        public static string BuildPhoneNoise(string mobilePhone)
-        {
-            if (string.IsNullOrEmpty(mobilePhone))
-                return string.Empty;
-
-            mobilePhone = GetPhoneValueDigits(mobilePhone);
-
-            const int startLen = 4;
-            const int endLen = 4;
-            if (mobilePhone.Length < startLen + endLen)
-                return mobilePhone;
-
-            var sb = new StringBuilder();
-            sb.Append("+");
-            sb.Append(mobilePhone.Substring(0, startLen));
-            for (var i = startLen; i < mobilePhone.Length - endLen; i++)
-            {
-                sb.Append("*");
-            }
-            sb.Append(mobilePhone.Substring(mobilePhone.Length - endLen));
-            return sb.ToString();
-        }
+        sb.Append(mobilePhone.Substring(mobilePhone.Length - endLen));
+        return sb.ToString();
     }
 }

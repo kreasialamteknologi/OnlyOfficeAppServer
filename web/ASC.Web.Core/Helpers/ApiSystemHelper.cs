@@ -45,129 +45,127 @@ using Microsoft.Extensions.Configuration;
 
 using Newtonsoft.Json.Linq;
 
-namespace ASC.Web.Core.Helpers
+namespace ASC.Web.Core.Helpers;
+[Scope]
+public class ApiSystemHelper
 {
-    [Scope]
-    public class ApiSystemHelper
+    public string ApiSystemUrl { get; private set; }
+
+    public string ApiCacheUrl { get; private set; }
+
+    private static byte[] Skey { get; set; }
+    private readonly CommonLinkUtility _commonLinkUtility;
+
+    public ApiSystemHelper(IConfiguration configuration, CommonLinkUtility commonLinkUtility, MachinePseudoKeys machinePseudoKeys)
     {
-        public string ApiSystemUrl { get; private set; }
-
-        public string ApiCacheUrl { get; private set; }
-
-        private static byte[] Skey { get; set; }
-        private CommonLinkUtility CommonLinkUtility { get; }
-
-        public ApiSystemHelper(IConfiguration configuration, CommonLinkUtility commonLinkUtility, MachinePseudoKeys machinePseudoKeys)
-        {
-            ApiSystemUrl = configuration["web:api-system"];
-            ApiCacheUrl = configuration["web:api-cache"];
-            CommonLinkUtility = commonLinkUtility;
-            Skey = machinePseudoKeys.GetMachineConstant();
-        }
+        ApiSystemUrl = configuration["web:api-system"];
+        ApiCacheUrl = configuration["web:api-cache"];
+        _commonLinkUtility = commonLinkUtility;
+        Skey = machinePseudoKeys.GetMachineConstant();
+    }
 
 
-        public string CreateAuthToken(string pkey)
-        {
-            using var hasher = new HMACSHA1(Skey);
-            var now = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
-            var hash = WebEncoders.Base64UrlEncode(hasher.ComputeHash(Encoding.UTF8.GetBytes(string.Join("\n", now, pkey))));
-            return string.Format("ASC {0}:{1}:{2}", pkey, now, hash);
-        }
+    public string CreateAuthToken(string pkey)
+    {
+        using var hasher = new HMACSHA1(Skey);
+        var now = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+        var hash = WebEncoders.Base64UrlEncode(hasher.ComputeHash(Encoding.UTF8.GetBytes(string.Join("\n", now, pkey))));
+        return string.Format("ASC {0}:{1}:{2}", pkey, now, hash);
+    }
 
-        #region system
+    #region system
 
-        public void ValidatePortalName(string domain, Guid userId)
-        {
-            try
-            {
-                var data = string.Format("portalName={0}", HttpUtility.UrlEncode(domain));
-                SendToApi(ApiSystemUrl, "portal/validateportalname", WebRequestMethods.Http.Post, userId, data);
-            }
-            catch (WebException exception)
-            {
-                if (exception.Status != WebExceptionStatus.ProtocolError || exception.Response == null) return;
-
-                var response = exception.Response;
-                try
-                {
-                    using var stream = response.GetResponseStream();
-                    using var reader = new StreamReader(stream, Encoding.UTF8);
-                    var result = reader.ReadToEnd();
-
-                    var resObj = JObject.Parse(result);
-                    if (resObj["error"] != null)
-                    {
-                        if (resObj["error"].ToString() == "portalNameExist")
-                        {
-                            var varians = resObj.Value<JArray>("variants").Select(jv => jv.Value<string>());
-                            throw new TenantAlreadyExistsException("Address busy.", varians);
-                        }
-
-                        throw new Exception(resObj["error"].ToString());
-                    }
-                }
-                finally
-                {
-                    if (response != null)
-                    {
-                        response.Close();
-                    }
-                }
-            }
-        }
-
-        #endregion
-
-        #region cache
-
-        public void AddTenantToCache(string domain, Guid userId)
+    public void ValidatePortalName(string domain, Guid userId)
+    {
+        try
         {
             var data = string.Format("portalName={0}", HttpUtility.UrlEncode(domain));
-            SendToApi(ApiCacheUrl, "portal/add", WebRequestMethods.Http.Post, userId, data);
+            SendToApi(ApiSystemUrl, "portal/validateportalname", WebRequestMethods.Http.Post, userId, data);
         }
-
-        public void RemoveTenantFromCache(string domain, Guid userId)
+        catch (WebException exception)
         {
-            SendToApi(ApiCacheUrl, "portal/remove?portalname=" + HttpUtility.UrlEncode(domain), "DELETE", userId);
-        }
+            if (exception.Status != WebExceptionStatus.ProtocolError || exception.Response == null) return;
 
-        public IEnumerable<string> FindTenantsInCache(string domain, Guid userId)
-        {
-            var result = SendToApi(ApiCacheUrl, "portal/find?portalname=" + HttpUtility.UrlEncode(domain), WebRequestMethods.Http.Get, userId);
-            var resObj = JObject.Parse(result);
-
-            var variants = resObj.Value<JArray>("variants");
-            return variants?.Select(jv => jv.Value<string>()).ToList();
-        }
-
-        #endregion
-
-        private string SendToApi(string absoluteApiUrl, string apiPath, string httpMethod, Guid userId, string data = null)
-        {
-            if (!Uri.TryCreate(absoluteApiUrl, UriKind.Absolute, out var uri))
+            var response = exception.Response;
+            try
             {
-                var appUrl = CommonLinkUtility.GetFullAbsolutePath("/");
-                absoluteApiUrl = string.Format("{0}/{1}", appUrl.TrimEnd('/'), absoluteApiUrl.TrimStart('/')).TrimEnd('/');
+                using var stream = response.GetResponseStream();
+                using var reader = new StreamReader(stream, Encoding.UTF8);
+                var result = reader.ReadToEnd();
+
+                var resObj = JObject.Parse(result);
+                if (resObj["error"] != null)
+                {
+                    if (resObj["error"].ToString() == "portalNameExist")
+                    {
+                        var varians = resObj.Value<JArray>("variants").Select(jv => jv.Value<string>());
+                        throw new TenantAlreadyExistsException("Address busy.", varians);
+                    }
+
+                    throw new Exception(resObj["error"].ToString());
+                }
             }
-
-            var url = string.Format("{0}/{1}", absoluteApiUrl, apiPath);
-
-            var request = new HttpRequestMessage();
-            request.RequestUri = new Uri(url);
-            request.Method = new HttpMethod(httpMethod);
-            request.Headers.Add("Authorization", CreateAuthToken(userId.ToString()));
-            request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-            if (data != null)
+            finally
             {
-                request.Content = new StringContent(data, Encoding.UTF8, "application/x-www-form-urlencoded");
+                if (response != null)
+                {
+                    response.Close();
+                }
             }
-
-            using var httpClient = new HttpClient();
-            using var response = httpClient.Send(request);
-            using var stream = response.Content.ReadAsStream();
-            using var reader = new StreamReader(stream, Encoding.UTF8);
-            return reader.ReadToEnd();
         }
+    }
+
+    #endregion
+
+    #region cache
+
+    public void AddTenantToCache(string domain, Guid userId)
+    {
+        var data = string.Format("portalName={0}", HttpUtility.UrlEncode(domain));
+        SendToApi(ApiCacheUrl, "portal/add", WebRequestMethods.Http.Post, userId, data);
+    }
+
+    public void RemoveTenantFromCache(string domain, Guid userId)
+    {
+        SendToApi(ApiCacheUrl, "portal/remove?portalname=" + HttpUtility.UrlEncode(domain), "DELETE", userId);
+    }
+
+    public IEnumerable<string> FindTenantsInCache(string domain, Guid userId)
+    {
+        var result = SendToApi(ApiCacheUrl, "portal/find?portalname=" + HttpUtility.UrlEncode(domain), WebRequestMethods.Http.Get, userId);
+        var resObj = JObject.Parse(result);
+
+        var variants = resObj.Value<JArray>("variants");
+        return variants?.Select(jv => jv.Value<string>()).ToList();
+    }
+
+    #endregion
+
+    private string SendToApi(string absoluteApiUrl, string apiPath, string httpMethod, Guid userId, string data = null)
+    {
+        if (!Uri.TryCreate(absoluteApiUrl, UriKind.Absolute, out var uri))
+        {
+            var appUrl = _commonLinkUtility.GetFullAbsolutePath("/");
+            absoluteApiUrl = string.Format("{0}/{1}", appUrl.TrimEnd('/'), absoluteApiUrl.TrimStart('/')).TrimEnd('/');
+        }
+
+        var url = string.Format("{0}/{1}", absoluteApiUrl, apiPath);
+
+        var request = new HttpRequestMessage();
+        request.RequestUri = new Uri(url);
+        request.Method = new HttpMethod(httpMethod);
+        request.Headers.Add("Authorization", CreateAuthToken(userId.ToString()));
+        request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+        if (data != null)
+        {
+            request.Content = new StringContent(data, Encoding.UTF8, "application/x-www-form-urlencoded");
+        }
+
+        using var httpClient = new HttpClient();
+        using var response = httpClient.Send(request);
+        using var stream = response.Content.ReadAsStream();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        return reader.ReadToEnd();
     }
 }

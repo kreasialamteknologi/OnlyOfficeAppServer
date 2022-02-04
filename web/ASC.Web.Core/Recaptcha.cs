@@ -9,64 +9,63 @@ using ASC.Web.Studio.Core;
 
 using Newtonsoft.Json.Linq;
 
-namespace ASC.Web.Core
-{
-    public class RecaptchaException : InvalidCredentialException
-    {
-        public RecaptchaException()
-        {
-        }
+namespace ASC.Web.Core;
 
-        public RecaptchaException(string message)
-            : base(message)
-        {
-        }
+public class RecaptchaException : InvalidCredentialException
+{
+    public RecaptchaException()
+    {
     }
 
-    [Scope]
-    public class Recaptcha
+    public RecaptchaException(string message)
+        : base(message)
     {
-        private SetupInfo SetupInfo { get; }
+    }
+}
 
-        public Recaptcha(SetupInfo setupInfo)
+[Scope]
+public class Recaptcha
+{
+    private SetupInfo _setupInfo;
+
+    public Recaptcha(SetupInfo setupInfo)
+    {
+        _setupInfo = setupInfo;
+    }
+
+
+    public bool ValidateRecaptcha(string response, string ip)
+    {
+        try
         {
-            SetupInfo = setupInfo;
-        }
+            var data = string.Format("secret={0}&remoteip={1}&response={2}", _setupInfo.RecaptchaPrivateKey, ip, response);
 
+            var request = new HttpRequestMessage();
+            request.RequestUri = new Uri(_setupInfo.RecaptchaVerifyUrl);
+            request.Method = HttpMethod.Post;
+            request.Content = new StringContent(data, Encoding.UTF8, "application/x-www-form-urlencoded");
 
-        public bool ValidateRecaptcha(string response, string ip)
-        {
-            try
+            using var httpClient = new HttpClient();
+            using var httpClientResponse = httpClient.Send(request);
+            using (var reader = new StreamReader(httpClientResponse.Content.ReadAsStream()))
             {
-                var data = string.Format("secret={0}&remoteip={1}&response={2}", SetupInfo.RecaptchaPrivateKey, ip, response);
+                var resp = reader.ReadToEnd();
+                var resObj = JObject.Parse(resp);
 
-                var request = new HttpRequestMessage();
-                request.RequestUri = new Uri(SetupInfo.RecaptchaVerifyUrl);
-                request.Method = HttpMethod.Post;
-                request.Content = new StringContent(data, Encoding.UTF8, "application/x-www-form-urlencoded");
-
-                using var httpClient = new HttpClient();
-                using var httpClientResponse = httpClient.Send(request);
-                using (var reader = new StreamReader(httpClientResponse.Content.ReadAsStream()))
+                if (resObj["success"] != null && resObj.Value<bool>("success"))
                 {
-                    var resp = reader.ReadToEnd();
-                    var resObj = JObject.Parse(resp);
-
-                    if (resObj["success"] != null && resObj.Value<bool>("success"))
-                    {
-                        return true;
-                    }
-                    if (resObj["error-codes"] != null && resObj["error-codes"].HasValues)
-                    {
-                        return false;
-                    }
+                    return true;
+                }
+                if (resObj["error-codes"] != null && resObj["error-codes"].HasValues)
+                {
+                    return false;
                 }
             }
-            catch (Exception)
-            {
-            }
-
-            return false;
         }
+        catch (Exception)
+        {
+        }
+
+        return false;
     }
 }

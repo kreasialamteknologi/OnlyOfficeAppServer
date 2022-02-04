@@ -27,117 +27,115 @@
 using System;
 using System.Text;
 
-namespace ASC.Web.Core.Calendars
+namespace ASC.Web.Core.Calendars;
+
+public abstract class BaseEvent : IEvent, ICloneable
 {
-    public abstract class BaseEvent : IEvent, ICloneable
+    public virtual TimeZoneInfo TimeZone { get; set; }
+
+    public BaseEvent()
     {
-        public virtual TimeZoneInfo TimeZone { get; set; }
-
-        public BaseEvent()
-        {
-            this.Context = new EventContext();
-            this.AlertType = EventAlertType.Never;
-            this.SharingOptions = new SharingOptions();
-            this.RecurrenceRule = new RecurrenceRule();
-        }
-
-        #region IEvent Members
-
-        public SharingOptions SharingOptions { get; set; }
-
-        public virtual EventAlertType AlertType { get; set; }
-
-        public virtual bool AllDayLong { get; set; }
-
-        public virtual string CalendarId { get; set; }
-
-        public virtual string Description { get; set; }
-
-        public virtual string Id { get; set; }
-
-        public virtual string Uid { get; set; }
-
-        public virtual string Name { get; set; }
-
-        public virtual Guid OwnerId { get; set; }
-
-        public virtual DateTime UtcEndDate { get; set; }
-
-        public virtual DateTime UtcStartDate { get; set; }
-
-        public virtual DateTime UtcUpdateDate { get; set; }
-
-        public virtual EventContext Context { get; set; }
-
-        public virtual RecurrenceRule RecurrenceRule { get; set; }
-
-        public virtual EventStatus Status { get; set; }
-
-        #endregion
-
-        #region ICloneable Members
-
-        public object Clone()
-        {
-            var e = (BaseEvent)this.MemberwiseClone();
-            e.Context = (EventContext)this.Context.Clone();
-            e.RecurrenceRule = (RecurrenceRule)this.RecurrenceRule.Clone();
-            e.SharingOptions = (SharingOptions)this.SharingOptions.Clone();
-            return e;
-        }
-
-        #endregion
-
-
-        #region IiCalFormatView Members
-
-        public virtual string ToiCalFormat()
-        {
-            var sb = new StringBuilder();
-
-            sb.AppendLine("BEGIN:VEVENT");
-            sb.AppendLine(string.Format("UID:{0}", string.IsNullOrEmpty(this.Uid) ? this.Id : this.Uid));
-            sb.AppendLine(string.Format("SUMMARY:{0}", this.Name));
-
-            if (!string.IsNullOrEmpty(this.Description))
-                sb.AppendLine(string.Format("DESCRIPTION:{0}", this.Description.Replace("\n", "\\n")));
-
-            if (this.AllDayLong)
-            {
-                DateTime startDate = this.UtcStartDate, endDate = this.UtcEndDate;
-                if (this.TimeZone != null)
-                {
-                    if (this.UtcStartDate != DateTime.MinValue && startDate.Kind == DateTimeKind.Utc)
-                        startDate = startDate.Add(TimeZone.GetOffset());
-
-                    if (this.UtcEndDate != DateTime.MinValue && endDate.Kind == DateTimeKind.Utc)
-                        endDate = endDate.Add(TimeZone.GetOffset());
-                }
-
-                if (this.UtcStartDate != DateTime.MinValue)
-                    sb.AppendLine(string.Format("DTSTART;VALUE=DATE:{0}", startDate.ToString("yyyyMMdd")));
-
-                if (this.UtcEndDate != DateTime.MinValue)
-                    sb.AppendLine(string.Format("DTEND;VALUE=DATE:{0}", endDate.AddDays(1).ToString("yyyyMMdd")));
-            }
-            else
-            {
-                if (this.UtcStartDate != DateTime.MinValue)
-                    sb.AppendLine(string.Format("DTSTART:{0}", this.UtcStartDate.ToString("yyyyMMdd'T'HHmmss'Z'")));
-
-                if (this.UtcEndDate != DateTime.MinValue)
-                    sb.AppendLine(string.Format("DTEND:{0}", this.UtcEndDate.ToString("yyyyMMdd'T'HHmmss'Z'")));
-            }
-
-
-            if (this.RecurrenceRule != null)
-                sb.AppendLine(this.RecurrenceRule.ToiCalFormat());
-
-            sb.Append("END:VEVENT");
-            return sb.ToString();
-        }
-
-        #endregion
-
+        this.Context = new EventContext();
+        this.AlertType = EventAlertType.Never;
+        this.SharingOptions = new SharingOptions();
+        this.RecurrenceRule = new RecurrenceRule();
     }
+
+    #region IEvent Members
+
+    public SharingOptions SharingOptions { get; set; }
+
+    public virtual EventAlertType AlertType { get; set; }
+
+    public virtual bool AllDayLong { get; set; }
+
+    public virtual string CalendarId { get; set; }
+
+    public virtual string Description { get; set; }
+
+    public virtual string Id { get; set; }
+
+    public virtual string Uid { get; set; }
+
+    public virtual string Name { get; set; }
+
+    public virtual Guid OwnerId { get; set; }
+
+    public virtual DateTime UtcEndDate { get; set; }
+
+    public virtual DateTime UtcStartDate { get; set; }
+
+    public virtual DateTime UtcUpdateDate { get; set; }
+
+    public virtual EventContext Context { get; set; }
+
+    public virtual RecurrenceRule RecurrenceRule { get; set; }
+
+    public virtual EventStatus Status { get; set; }
+
+    #endregion
+
+    #region ICloneable Members
+
+    public object Clone()
+    {
+        var e = (BaseEvent)this.MemberwiseClone();
+        e.Context = (EventContext)this.Context.Clone();
+        e.RecurrenceRule = (RecurrenceRule)this.RecurrenceRule.Clone();
+        e.SharingOptions = (SharingOptions)this.SharingOptions.Clone();
+        return e;
+    }
+
+    #endregion
+
+
+    #region IiCalFormatView Members
+
+    public virtual string ToiCalFormat()
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine("BEGIN:VEVENT");
+        sb.AppendLine(string.Format("UID:{0}", string.IsNullOrEmpty(this.Uid) ? this.Id : this.Uid));
+        sb.AppendLine(string.Format("SUMMARY:{0}", this.Name));
+
+        if (!string.IsNullOrEmpty(this.Description))
+            sb.AppendLine(string.Format("DESCRIPTION:{0}", this.Description.Replace("\n", "\\n")));
+
+        if (this.AllDayLong)
+        {
+            DateTime startDate = this.UtcStartDate, endDate = this.UtcEndDate;
+            if (this.TimeZone != null)
+            {
+                if (this.UtcStartDate != DateTime.MinValue && startDate.Kind == DateTimeKind.Utc)
+                    startDate = startDate.Add(TimeZone.GetOffset());
+
+                if (this.UtcEndDate != DateTime.MinValue && endDate.Kind == DateTimeKind.Utc)
+                    endDate = endDate.Add(TimeZone.GetOffset());
+            }
+
+            if (this.UtcStartDate != DateTime.MinValue)
+                sb.AppendLine(string.Format("DTSTART;VALUE=DATE:{0}", startDate.ToString("yyyyMMdd")));
+
+            if (this.UtcEndDate != DateTime.MinValue)
+                sb.AppendLine(string.Format("DTEND;VALUE=DATE:{0}", endDate.AddDays(1).ToString("yyyyMMdd")));
+        }
+        else
+        {
+            if (this.UtcStartDate != DateTime.MinValue)
+                sb.AppendLine(string.Format("DTSTART:{0}", this.UtcStartDate.ToString("yyyyMMdd'T'HHmmss'Z'")));
+
+            if (this.UtcEndDate != DateTime.MinValue)
+                sb.AppendLine(string.Format("DTEND:{0}", this.UtcEndDate.ToString("yyyyMMdd'T'HHmmss'Z'")));
+        }
+
+
+        if (this.RecurrenceRule != null)
+            sb.AppendLine(this.RecurrenceRule.ToiCalFormat());
+
+        sb.Append("END:VEVENT");
+        return sb.ToString();
+    }
+
+    #endregion
 }

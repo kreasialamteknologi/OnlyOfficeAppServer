@@ -27,78 +27,77 @@
 using System;
 using System.Text;
 
-namespace ASC.Web.Core.Calendars
+namespace ASC.Web.Core.Calendars;
+
+public abstract class BaseTodo : ITodo, ICloneable
 {
-    public abstract class BaseTodo : ITodo, ICloneable
+    internal TimeZoneInfo TimeZone { get; set; }
+
+    public BaseTodo()
     {
-        internal TimeZoneInfo TimeZone { get; set; }
-
-        public BaseTodo()
-        {
-            this.Context = new TodoContext();
-        }
-
-        #region ITodo Members
-
-
-        public virtual string CalendarId { get; set; }
-
-        public virtual string Description { get; set; }
-
-        public virtual string Id { get; set; }
-
-        public virtual string Uid { get; set; }
-
-        public virtual string Name { get; set; }
-
-        public virtual Guid OwnerId { get; set; }
-
-        public virtual DateTime UtcStartDate { get; set; }
-
-        public virtual TodoContext Context { get; set; }
-
-        public virtual DateTime Completed { get; set; }
-
-
-        #endregion
-
-        #region ICloneable Members
-
-        public object Clone()
-        {
-            var t = (BaseTodo)this.MemberwiseClone();
-            t.Context = (TodoContext)this.Context.Clone();
-            return t;
-        }
-
-        #endregion
-
-
-        #region IiCalFormatView Members
-
-        public virtual string ToiCalFormat()
-        {
-            var sb = new StringBuilder();
-
-            sb.AppendLine("BEGIN:TODO");
-            sb.AppendLine(string.Format("UID:{0}", string.IsNullOrEmpty(this.Uid) ? this.Id : this.Uid));
-            sb.AppendLine(string.Format("SUMMARY:{0}", this.Name));
-
-            if (!string.IsNullOrEmpty(this.Description))
-                sb.AppendLine(string.Format("DESCRIPTION:{0}", this.Description.Replace("\n", "\\n")));
-
-
-            if (this.UtcStartDate != DateTime.MinValue)
-                sb.AppendLine(string.Format("DTSTART:{0}", this.UtcStartDate.ToString("yyyyMMdd'T'HHmmss'Z'")));
-
-            if (this.Completed != DateTime.MinValue)
-                sb.AppendLine(string.Format("COMPLETED:{0}", this.Completed.ToString("yyyyMMdd'T'HHmmss'Z'")));
-
-            sb.Append("END:TODO");
-            return sb.ToString();
-        }
-
-        #endregion
-
+        this.Context = new TodoContext();
     }
+
+    #region ITodo Members
+
+
+    public virtual string CalendarId { get; set; }
+
+    public virtual string Description { get; set; }
+
+    public virtual string Id { get; set; }
+
+    public virtual string Uid { get; set; }
+
+    public virtual string Name { get; set; }
+
+    public virtual Guid OwnerId { get; set; }
+
+    public virtual DateTime UtcStartDate { get; set; }
+
+    public virtual TodoContext Context { get; set; }
+
+    public virtual DateTime Completed { get; set; }
+
+
+    #endregion
+
+    #region ICloneable Members
+
+    public object Clone()
+    {
+        var t = (BaseTodo)this.MemberwiseClone();
+        t.Context = (TodoContext)this.Context.Clone();
+        return t;
+    }
+
+    #endregion
+
+
+    #region IiCalFormatView Members
+
+    public virtual string ToiCalFormat()
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine("BEGIN:TODO");
+        sb.AppendLine(string.Format("UID:{0}", string.IsNullOrEmpty(this.Uid) ? this.Id : this.Uid));
+        sb.AppendLine(string.Format("SUMMARY:{0}", this.Name));
+
+        if (!string.IsNullOrEmpty(this.Description))
+            sb.AppendLine(string.Format("DESCRIPTION:{0}", this.Description.Replace("\n", "\\n")));
+
+
+        if (this.UtcStartDate != DateTime.MinValue)
+            sb.AppendLine(string.Format("DTSTART:{0}", this.UtcStartDate.ToString("yyyyMMdd'T'HHmmss'Z'")));
+
+        if (this.Completed != DateTime.MinValue)
+            sb.AppendLine(string.Format("COMPLETED:{0}", this.Completed.ToString("yyyyMMdd'T'HHmmss'Z'")));
+
+        sb.Append("END:TODO");
+        return sb.ToString();
+    }
+
+    #endregion
+
 }

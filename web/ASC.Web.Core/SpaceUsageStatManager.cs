@@ -26,24 +26,23 @@
 
 using System;
 
-namespace ASC.Web.Core
+namespace ASC.Web.Core;
+
+public abstract class SpaceUsageStatManager
 {
-    public abstract class SpaceUsageStatManager
+    public class UsageSpaceStatItem
     {
-        public class UsageSpaceStatItem
-        {
-            public string Name { get; set; }
-            public string Url { get; set; }
-            public string ImgUrl { get; set; }
-            public bool Disabled { get; set; }
-            public long SpaceUsage { get; set; }
-        }
-
-        public abstract System.Collections.Generic.List<UsageSpaceStatItem> GetStatData();
+        public string Name { get; set; }
+        public string Url { get; set; }
+        public string ImgUrl { get; set; }
+        public bool Disabled { get; set; }
+        public long SpaceUsage { get; set; }
     }
 
-    public interface IUserSpaceUsage
-    {
-        long GetUserSpaceUsage(Guid userId);
-    }
+    public abstract System.Collections.Generic.List<UsageSpaceStatItem> GetStatData();
+}
+
+public interface IUserSpaceUsage
+{
+    long GetUserSpaceUsage(Guid userId);
 }

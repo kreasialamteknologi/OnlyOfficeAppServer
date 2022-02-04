@@ -33,98 +33,96 @@ using ASC.Web.Studio.Utility;
 
 using SixLabors.ImageSharp;
 
-namespace ASC.Core.Users
+namespace ASC.Core.Users;
+public static class UserInfoExtension
 {
-    public static class UserInfoExtension
+    public static string DisplayUserName(this UserInfo userInfo, DisplayUserSettingsHelper displayUserSettingsHelper)
     {
-        public static string DisplayUserName(this UserInfo userInfo, DisplayUserSettingsHelper displayUserSettingsHelper)
+        return DisplayUserName(userInfo, true, displayUserSettingsHelper);
+    }
+
+    public static string DisplayUserName(this UserInfo userInfo, bool withHtmlEncode, DisplayUserSettingsHelper displayUserSettingsHelper)
+    {
+        return displayUserSettingsHelper.GetFullUserName(userInfo, withHtmlEncode);
+    }
+
+    public static List<UserInfo> SortByUserName(this IEnumerable<UserInfo> userInfoCollection)
+    {
+        if (userInfoCollection == null) return new List<UserInfo>();
+
+        var users = new List<UserInfo>(userInfoCollection);
+        users.Sort(UserInfoComparer.Default);
+        return users;
+    }
+
+    public static bool HasAvatar(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
+    {
+        return UserPhotoManager.UserHasAvatar(userInfo.ID);
+    }
+
+    public static Size GetPhotoSize(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
+    {
+        return UserPhotoManager.GetPhotoSize(userInfo.ID);
+    }
+
+    public static string GetPhotoURL(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
+    {
+        return UserPhotoManager.GetPhotoAbsoluteWebPath(userInfo.ID);
+    }
+
+    public static string GetRetinaPhotoURL(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
+    {
+        return UserPhotoManager.GetRetinaPhotoURL(userInfo.ID);
+    }
+
+    public static string GetMaxPhotoURL(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
+    {
+        return UserPhotoManager.GetMaxPhotoURL(userInfo.ID);
+    }
+
+    public static string GetBigPhotoURL(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
+    {
+        return UserPhotoManager.GetBigPhotoURL(userInfo.ID);
+    }
+
+    public static string GetMediumPhotoURL(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
+    {
+        return UserPhotoManager.GetMediumPhotoURL(userInfo.ID);
+    }
+
+    public static string GetSmallPhotoURL(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
+    {
+        return UserPhotoManager.GetSmallPhotoURL(userInfo.ID);
+    }
+
+    public static string RenderProfileLinkBase(this UserInfo userInfo, CommonLinkUtility commonLinkUtility, DisplayUserSettingsHelper displayUserSettingsHelper)
+    {
+        var sb = new StringBuilder();
+
+        //check for removed users
+        if (userInfo.ID == Constants.LostUser.ID)
         {
-            return DisplayUserName(userInfo, true, displayUserSettingsHelper);
+            sb.AppendFormat("<span class='userLink text-medium-describe' style='white-space:nowrap;'>{0}</span>", userInfo.DisplayUserName(displayUserSettingsHelper));
         }
-
-        public static string DisplayUserName(this UserInfo userInfo, bool withHtmlEncode, DisplayUserSettingsHelper displayUserSettingsHelper)
+        else
         {
-            return displayUserSettingsHelper.GetFullUserName(userInfo, withHtmlEncode);
+            var popupID = Guid.NewGuid();
+            sb.AppendFormat("<span class=\"userLink\" style='white-space:nowrap;' id='{0}' data-uid='{1}'>", popupID, userInfo.ID);
+            sb.AppendFormat("<a class='linkDescribe' href=\"{0}\">{1}</a>", userInfo.GetUserProfilePageURLGeneral(commonLinkUtility), userInfo.DisplayUserName(displayUserSettingsHelper));
+            sb.Append("</span>");
+
+            sb.AppendFormat("<script language='javascript'> StudioUserProfileInfo.RegistryElement('{0}','\"{1}\"); </script>", popupID, userInfo.ID);
         }
+        return sb.ToString();
+    }
 
-        public static List<UserInfo> SortByUserName(this IEnumerable<UserInfo> userInfoCollection)
-        {
-            if (userInfoCollection == null) return new List<UserInfo>();
-
-            var users = new List<UserInfo>(userInfoCollection);
-            users.Sort(UserInfoComparer.Default);
-            return users;
-        }
-
-        public static bool HasAvatar(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
-        {
-            return UserPhotoManager.UserHasAvatar(userInfo.ID);
-        }
-
-        public static Size GetPhotoSize(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
-        {
-            return UserPhotoManager.GetPhotoSize(userInfo.ID);
-        }
-
-        public static string GetPhotoURL(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
-        {
-            return UserPhotoManager.GetPhotoAbsoluteWebPath(userInfo.ID);
-        }
-
-        public static string GetRetinaPhotoURL(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
-        {
-            return UserPhotoManager.GetRetinaPhotoURL(userInfo.ID);
-        }
-
-        public static string GetMaxPhotoURL(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
-        {
-            return UserPhotoManager.GetMaxPhotoURL(userInfo.ID);
-        }
-
-        public static string GetBigPhotoURL(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
-        {
-            return UserPhotoManager.GetBigPhotoURL(userInfo.ID);
-        }
-
-        public static string GetMediumPhotoURL(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
-        {
-            return UserPhotoManager.GetMediumPhotoURL(userInfo.ID);
-        }
-
-        public static string GetSmallPhotoURL(this UserInfo userInfo, UserPhotoManager UserPhotoManager)
-        {
-            return UserPhotoManager.GetSmallPhotoURL(userInfo.ID);
-        }
-
-        public static string RenderProfileLinkBase(this UserInfo userInfo, CommonLinkUtility commonLinkUtility, DisplayUserSettingsHelper displayUserSettingsHelper)
-        {
-            var sb = new StringBuilder();
-
-            //check for removed users
-            if (userInfo.ID == Constants.LostUser.ID)
-            {
-                sb.AppendFormat("<span class='userLink text-medium-describe' style='white-space:nowrap;'>{0}</span>", userInfo.DisplayUserName(displayUserSettingsHelper));
-            }
-            else
-            {
-                var popupID = Guid.NewGuid();
-                sb.AppendFormat("<span class=\"userLink\" style='white-space:nowrap;' id='{0}' data-uid='{1}'>", popupID, userInfo.ID);
-                sb.AppendFormat("<a class='linkDescribe' href=\"{0}\">{1}</a>", userInfo.GetUserProfilePageURLGeneral(commonLinkUtility), userInfo.DisplayUserName(displayUserSettingsHelper));
-                sb.Append("</span>");
-
-                sb.AppendFormat("<script language='javascript'> StudioUserProfileInfo.RegistryElement('{0}','\"{1}\"); </script>", popupID, userInfo.ID);
-            }
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// return absolute profile link
-        /// </summary>
-        /// <param name="userInfo"></param>        
-        /// <returns></returns>
-        private static string GetUserProfilePageURLGeneral(this UserInfo userInfo, CommonLinkUtility commonLinkUtility)
-        {
-            return commonLinkUtility.GetUserProfile(userInfo);
-        }
+    /// <summary>
+    /// return absolute profile link
+    /// </summary>
+    /// <param name="userInfo"></param>        
+    /// <returns></returns>
+    private static string GetUserProfilePageURLGeneral(this UserInfo userInfo, CommonLinkUtility commonLinkUtility)
+    {
+        return commonLinkUtility.GetUserProfile(userInfo);
     }
 }

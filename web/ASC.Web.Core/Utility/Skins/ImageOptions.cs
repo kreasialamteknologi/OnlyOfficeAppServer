@@ -26,12 +26,11 @@
 
 using System;
 
-namespace ASC.Web.Core.Utility.Skins
+namespace ASC.Web.Core.Utility.Skins;
+
+[Serializable]
+public class ImageOptions
 {
-    [Serializable]
-    public class ImageOptions
-    {
-        public virtual string ImageFileName { get; set; }
-        public virtual Guid PartID { get; set; }
-    }
+    public virtual string ImageFileName { get; set; }
+    public virtual Guid PartID { get; set; }
 }

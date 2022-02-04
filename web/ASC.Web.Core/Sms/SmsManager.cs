@@ -34,121 +34,120 @@ using ASC.Core.Users;
 using ASC.Web.Core.PublicResources;
 using ASC.Web.Core.Sms;
 
-namespace ASC.Web.Studio.Core.SMS
+namespace ASC.Web.Studio.Core.SMS;
+
+[Scope]
+public class SmsManager
 {
-    [Scope]
-    public class SmsManager
+    private readonly UserManager _userManager;
+    private readonly SecurityContext _securityContext;
+    private readonly TenantManager _tenantManager;
+    private readonly SmsKeyStorage _smsKeyStorage;
+    private readonly SmsSender _smsSender;
+    private readonly StudioSmsNotificationSettingsHelper _studioSmsNotificationSettingsHelper;
+
+    public SmsManager(
+        UserManager userManager,
+        SecurityContext securityContext,
+        TenantManager tenantManager,
+        SmsKeyStorage smsKeyStorage,
+        SmsSender smsSender,
+        StudioSmsNotificationSettingsHelper studioSmsNotificationSettingsHelper)
     {
-        private UserManager UserManager { get; }
-        private SecurityContext SecurityContext { get; }
-        private TenantManager TenantManager { get; }
-        private SmsKeyStorage SmsKeyStorage { get; }
-        private SmsSender SmsSender { get; }
-        private StudioSmsNotificationSettingsHelper StudioSmsNotificationSettingsHelper { get; }
+        _userManager = userManager;
+        _securityContext = securityContext;
+        _tenantManager = tenantManager;
+        _smsKeyStorage = smsKeyStorage;
+        _smsSender = smsSender;
+        _studioSmsNotificationSettingsHelper = studioSmsNotificationSettingsHelper;
+    }
 
-        public SmsManager(
-            UserManager userManager,
-            SecurityContext securityContext,
-            TenantManager tenantManager,
-            SmsKeyStorage smsKeyStorage,
-            SmsSender smsSender,
-            StudioSmsNotificationSettingsHelper studioSmsNotificationSettingsHelper)
+    public string SaveMobilePhone(UserInfo user, string mobilePhone)
+    {
+        mobilePhone = SmsSender.GetPhoneValueDigits(mobilePhone);
+
+        if (user == null || Equals(user, Constants.LostUser)) throw new Exception(Resource.ErrorUserNotFound);
+        if (string.IsNullOrEmpty(mobilePhone)) throw new Exception(Resource.ActivateMobilePhoneEmptyPhoneNumber);
+        if (!string.IsNullOrEmpty(user.MobilePhone) && user.MobilePhoneActivationStatus == MobilePhoneActivationStatus.Activated) throw new Exception(Resource.MobilePhoneMustErase);
+
+        user.MobilePhone = mobilePhone;
+        user.MobilePhoneActivationStatus = MobilePhoneActivationStatus.NotActivated;
+        if (_securityContext.IsAuthenticated)
         {
-            UserManager = userManager;
-            SecurityContext = securityContext;
-            TenantManager = tenantManager;
-            SmsKeyStorage = smsKeyStorage;
-            SmsSender = smsSender;
-            StudioSmsNotificationSettingsHelper = studioSmsNotificationSettingsHelper;
+            _userManager.SaveUserInfo(user);
         }
-
-        public string SaveMobilePhone(UserInfo user, string mobilePhone)
+        else
         {
-            mobilePhone = SmsSender.GetPhoneValueDigits(mobilePhone);
-
-            if (user == null || Equals(user, Constants.LostUser)) throw new Exception(Resource.ErrorUserNotFound);
-            if (string.IsNullOrEmpty(mobilePhone)) throw new Exception(Resource.ActivateMobilePhoneEmptyPhoneNumber);
-            if (!string.IsNullOrEmpty(user.MobilePhone) && user.MobilePhoneActivationStatus == MobilePhoneActivationStatus.Activated) throw new Exception(Resource.MobilePhoneMustErase);
-
-            user.MobilePhone = mobilePhone;
-            user.MobilePhoneActivationStatus = MobilePhoneActivationStatus.NotActivated;
-            if (SecurityContext.IsAuthenticated)
+            try
             {
-                UserManager.SaveUserInfo(user);
+                _securityContext.AuthenticateMeWithoutCookie(ASC.Core.Configuration.Constants.CoreSystem);
+                _userManager.SaveUserInfo(user);
             }
-            else
+            finally
             {
-                try
-                {
-                    SecurityContext.AuthenticateMeWithoutCookie(ASC.Core.Configuration.Constants.CoreSystem);
-                    UserManager.SaveUserInfo(user);
-                }
-                finally
-                {
-                    SecurityContext.Logout();
-                }
-            }
-
-            if (StudioSmsNotificationSettingsHelper.Enable)
-            {
-                PutAuthCode(user, false);
-            }
-
-            return mobilePhone;
-        }
-
-        public void PutAuthCode(UserInfo user, bool again)
-        {
-            if (user == null || Equals(user, Constants.LostUser)) throw new Exception(Resource.ErrorUserNotFound);
-
-            if (!StudioSmsNotificationSettingsHelper.IsVisibleSettings() || !StudioSmsNotificationSettingsHelper.Enable) throw new MethodAccessException();
-
-            var mobilePhone = SmsSender.GetPhoneValueDigits(user.MobilePhone);
-
-            if (SmsKeyStorage.ExistsKey(mobilePhone) && !again) return;
-
-            if (!SmsKeyStorage.GenerateKey(mobilePhone, out var key)) throw new Exception(Resource.SmsTooMuchError);
-            if (SmsSender.SendSMS(mobilePhone, string.Format(Resource.SmsAuthenticationMessageToUser, key)))
-            {
-                TenantManager.SetTenantQuotaRow(new TenantQuotaRow { Tenant = TenantManager.GetCurrentTenant().TenantId, Path = "/sms", Counter = 1 }, true);
+                _securityContext.Logout();
             }
         }
 
-        public void ValidateSmsCode(UserInfo user, string code)
+        if (_studioSmsNotificationSettingsHelper.Enable)
         {
-            if (!StudioSmsNotificationSettingsHelper.IsVisibleSettings()
-                || !StudioSmsNotificationSettingsHelper.Enable)
-            {
-                return;
-            }
+            PutAuthCode(user, false);
+        }
 
-            if (user == null || Equals(user, Constants.LostUser)) throw new Exception(Resource.ErrorUserNotFound);
+        return mobilePhone;
+    }
 
-            var valid = SmsKeyStorage.ValidateKey(user.MobilePhone, code);
-            switch (valid)
-            {
-                case SmsKeyStorage.Result.Empty:
-                    throw new Exception(Resource.ActivateMobilePhoneEmptyCode);
-                case SmsKeyStorage.Result.TooMuch:
-                    throw new BruteForceCredentialException(Resource.SmsTooMuchError);
-                case SmsKeyStorage.Result.Timeout:
-                    throw new TimeoutException(Resource.SmsAuthenticationTimeout);
-                case SmsKeyStorage.Result.Invalide:
-                    throw new ArgumentException(Resource.SmsAuthenticationMessageError);
-            }
-            if (valid != SmsKeyStorage.Result.Ok) throw new Exception("Error: " + valid);
+    public void PutAuthCode(UserInfo user, bool again)
+    {
+        if (user == null || Equals(user, Constants.LostUser)) throw new Exception(Resource.ErrorUserNotFound);
 
-            if (!SecurityContext.IsAuthenticated)
-            {
-                var cookiesKey = SecurityContext.AuthenticateMe(user.ID);
-                //CookiesManager.SetCookies(CookiesType.AuthKey, cookiesKey);
-            }
+        if (!_studioSmsNotificationSettingsHelper.IsVisibleSettings() || !_studioSmsNotificationSettingsHelper.Enable) throw new MethodAccessException();
 
-            if (user.MobilePhoneActivationStatus == MobilePhoneActivationStatus.NotActivated)
-            {
-                user.MobilePhoneActivationStatus = MobilePhoneActivationStatus.Activated;
-                UserManager.SaveUserInfo(user);
-            }
+        var mobilePhone = SmsSender.GetPhoneValueDigits(user.MobilePhone);
+
+        if (_smsKeyStorage.ExistsKey(mobilePhone) && !again) return;
+
+        if (!_smsKeyStorage.GenerateKey(mobilePhone, out var key)) throw new Exception(Resource.SmsTooMuchError);
+        if (_smsSender.SendSMS(mobilePhone, string.Format(Resource.SmsAuthenticationMessageToUser, key)))
+        {
+            _tenantManager.SetTenantQuotaRow(new TenantQuotaRow { Tenant = _tenantManager.GetCurrentTenant().TenantId, Path = "/sms", Counter = 1 }, true);
+        }
+    }
+
+    public void ValidateSmsCode(UserInfo user, string code)
+    {
+        if (!_studioSmsNotificationSettingsHelper.IsVisibleSettings()
+            || !_studioSmsNotificationSettingsHelper.Enable)
+        {
+            return;
+        }
+
+        if (user == null || Equals(user, Constants.LostUser)) throw new Exception(Resource.ErrorUserNotFound);
+
+        var valid = _smsKeyStorage.ValidateKey(user.MobilePhone, code);
+        switch (valid)
+        {
+            case SmsKeyStorage.Result.Empty:
+                throw new Exception(Resource.ActivateMobilePhoneEmptyCode);
+            case SmsKeyStorage.Result.TooMuch:
+                throw new BruteForceCredentialException(Resource.SmsTooMuchError);
+            case SmsKeyStorage.Result.Timeout:
+                throw new TimeoutException(Resource.SmsAuthenticationTimeout);
+            case SmsKeyStorage.Result.Invalide:
+                throw new ArgumentException(Resource.SmsAuthenticationMessageError);
+        }
+        if (valid != SmsKeyStorage.Result.Ok) throw new Exception("Error: " + valid);
+
+        if (!_securityContext.IsAuthenticated)
+        {
+            var cookiesKey = _securityContext.AuthenticateMe(user.ID);
+            //CookiesManager.SetCookies(CookiesType.AuthKey, cookiesKey);
+        }
+
+        if (user.MobilePhoneActivationStatus == MobilePhoneActivationStatus.NotActivated)
+        {
+            user.MobilePhoneActivationStatus = MobilePhoneActivationStatus.Activated;
+            _userManager.SaveUserInfo(user);
         }
     }
 }

@@ -30,20 +30,19 @@ using System.Linq;
 using ASC.Web.Core;
 using ASC.Web.Studio.Utility;
 
-namespace ASC.Core.Users
+namespace ASC.Core.Users;
+
+public static class StudioUserInfoExtension
 {
-    public static class StudioUserInfoExtension
+    public static string GetUserProfilePageURL(this UserInfo userInfo, CommonLinkUtility commonLinkUtility)
     {
-        public static string GetUserProfilePageURL(this UserInfo userInfo, CommonLinkUtility commonLinkUtility)
-        {
-            return userInfo == null ? "" : commonLinkUtility.GetUserProfile(userInfo);
-        }
+        return userInfo == null ? "" : commonLinkUtility.GetUserProfile(userInfo);
+    }
 
-        public static List<string> GetListAdminModules(this UserInfo ui, WebItemSecurity webItemSecurity)
-        {
-            var products = webItemSecurity.WebItemManager.GetItemsAll().Where(i => i is IProduct || i.ID == WebItemManager.MailProductID);
+    public static List<string> GetListAdminModules(this UserInfo ui, WebItemSecurity webItemSecurity)
+    {
+        var products = webItemSecurity.WebItemManager.GetItemsAll().Where(i => i is IProduct || i.ID == WebItemManager.MailProductID);
 
-            return (from product in products where webItemSecurity.IsProductAdministrator(product.ID, ui.ID) select product.ProductClassName).ToList();
-        }
+        return (from product in products where webItemSecurity.IsProductAdministrator(product.ID, ui.ID) select product.ProductClassName).ToList();
     }
 }

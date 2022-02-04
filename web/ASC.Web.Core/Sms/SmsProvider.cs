@@ -50,130 +50,223 @@ using Twilio.Clients;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
 
-namespace ASC.Web.Core.Sms
+namespace ASC.Web.Core.Sms;
+
+[Scope(Additional = typeof(TwilioProviderExtention))]
+public class SmsProviderManager
 {
-    [Scope(Additional = typeof(TwilioProviderExtention))]
-    public class SmsProviderManager
+    private readonly ConsumerFactory _consumerFactory;
+
+    public SmscProvider SmscProvider { get => _consumerFactory.Get<SmscProvider>(); }
+    public ClickatellProvider ClickatellProvider { get => _consumerFactory.Get<ClickatellProvider>(); }
+    public TwilioProvider TwilioProvider { get => _consumerFactory.Get<TwilioProvider>(); }
+    public ClickatellProvider ClickatellUSAProvider { get => _consumerFactory.Get<ClickatellUSAProvider>(); }
+    public TwilioProvider TwilioSaaSProvider { get => _consumerFactory.Get<TwilioSaaSProvider>(); }
+
+    public SmsProviderManager(ConsumerFactory consumerFactory)
     {
-        public SmscProvider SmscProvider { get => ConsumerFactory.Get<SmscProvider>(); }
-        private ConsumerFactory ConsumerFactory { get; }
-
-        public ClickatellProvider ClickatellProvider { get => ConsumerFactory.Get<ClickatellProvider>(); }
-        public TwilioProvider TwilioProvider { get => ConsumerFactory.Get<TwilioProvider>(); }
-
-        public ClickatellProvider ClickatellUSAProvider { get => ConsumerFactory.Get<ClickatellUSAProvider>(); }
-        public TwilioProvider TwilioSaaSProvider { get => ConsumerFactory.Get<TwilioSaaSProvider>(); }
-
-        public SmsProviderManager(ConsumerFactory consumerFactory)
-        {
-            ConsumerFactory = consumerFactory;
-        }
-
-        public bool Enabled()
-        {
-            return SmscProvider.Enable() || ClickatellProvider.Enable() || ClickatellUSAProvider.Enable() || TwilioProvider.Enable() || TwilioSaaSProvider.Enable();
-        }
-
-        public bool SendMessage(string number, string message)
-        {
-            if (!Enabled()) return false;
-
-            SmsProvider provider = null;
-            if (ClickatellProvider.Enable())
-            {
-                provider = ClickatellProvider;
-            }
-
-            string smsUsa;
-            if (ClickatellUSAProvider.Enable()
-                && !string.IsNullOrEmpty(smsUsa = ClickatellProvider["clickatellUSA"]) && Regex.IsMatch(number, smsUsa))
-            {
-                provider = ClickatellUSAProvider;
-            }
-
-            if (provider == null && TwilioProvider.Enable())
-            {
-                provider = TwilioProvider;
-            }
-
-            if (provider == null && TwilioSaaSProvider.Enable())
-            {
-                provider = TwilioSaaSProvider;
-            }
-
-            if (SmscProvider.Enable()
-                && (provider == null
-                    || SmscProvider.SuitableNumber(number)))
-            {
-                provider = SmscProvider;
-            }
-
-            if (provider == null)
-            {
-                return false;
-            }
-
-            return provider.SendMessage(number, message);
-        }
+        _consumerFactory = consumerFactory;
     }
 
-    public abstract class SmsProvider : Consumer
+    public bool Enabled()
     {
-        protected readonly ILog Log;
-        protected ICache MemoryCache { get; set; }
+        return SmscProvider.Enable() || ClickatellProvider.Enable() || ClickatellUSAProvider.Enable() || TwilioProvider.Enable() || TwilioSaaSProvider.Enable();
+    }
 
-        protected virtual string SendMessageUrlFormat { get; set; }
-        protected virtual string GetBalanceUrlFormat { get; set; }
-        protected virtual string Key { get; set; }
-        protected virtual string Secret { get; set; }
-        protected virtual string Sender { get; set; }
+    public bool SendMessage(string number, string message)
+    {
+        if (!Enabled()) return false;
 
-        protected SmsProvider()
+        SmsProvider provider = null;
+        if (ClickatellProvider.Enable())
         {
+            provider = ClickatellProvider;
         }
 
-        protected SmsProvider(
-            TenantManager tenantManager,
-            CoreBaseSettings coreBaseSettings,
-            CoreSettings coreSettings,
-            IConfiguration configuration,
-            ICacheNotify<ConsumerCacheItem> cache,
-            ConsumerFactory consumerFactory,
-            IOptionsMonitor<ILog> options,
-            ICache memCache,
-            string name, int order, Dictionary<string, string> props, Dictionary<string, string> additional = null)
-            : base(tenantManager, coreBaseSettings, coreSettings, configuration, cache, consumerFactory, name, order, props, additional)
+        string smsUsa;
+        if (ClickatellUSAProvider.Enable()
+            && !string.IsNullOrEmpty(smsUsa = ClickatellProvider["clickatellUSA"]) && Regex.IsMatch(number, smsUsa))
         {
-            MemoryCache = memCache;
-            Log = options.CurrentValue;
+            provider = ClickatellUSAProvider;
         }
 
-        public virtual bool Enable()
+        if (provider == null && TwilioProvider.Enable())
         {
-            return true;
+            provider = TwilioProvider;
         }
 
-        private string SendMessageUrl()
+        if (provider == null && TwilioSaaSProvider.Enable())
         {
-            return SendMessageUrlFormat
-                .Replace("{key}", Key)
-                .Replace("{secret}", Secret)
-                .Replace("{sender}", Sender);
+            provider = TwilioSaaSProvider;
         }
 
-        public virtual bool SendMessage(string number, string message)
+        if (SmscProvider.Enable()
+            && (provider == null
+                || SmscProvider.SuitableNumber(number)))
+        {
+            provider = SmscProvider;
+        }
+
+        if (provider == null)
+        {
+            return false;
+        }
+
+        return provider.SendMessage(number, message);
+    }
+}
+
+public abstract class SmsProvider : Consumer
+{
+    internal readonly ILog _log;
+    internal ICache _memoryCache;
+
+    protected virtual string SendMessageUrlFormat { get; set; }
+    protected virtual string GetBalanceUrlFormat { get; set; }
+    protected virtual string Key { get; set; }
+    protected virtual string Secret { get; set; }
+    protected virtual string Sender { get; set; }
+
+    protected SmsProvider()
+    {
+    }
+
+    protected SmsProvider(
+        TenantManager tenantManager,
+        CoreBaseSettings coreBaseSettings,
+        CoreSettings coreSettings,
+        IConfiguration configuration,
+        ICacheNotify<ConsumerCacheItem> cache,
+        ConsumerFactory consumerFactory,
+        IOptionsMonitor<ILog> options,
+        ICache memCache,
+        string name, int order, Dictionary<string, string> props, Dictionary<string, string> additional = null)
+        : base(tenantManager, coreBaseSettings, coreSettings, configuration, cache, consumerFactory, name, order, props, additional)
+    {
+        _memoryCache = memCache;
+        _log = options.CurrentValue;
+    }
+
+    public virtual bool Enable()
+    {
+        return true;
+    }
+
+    private string SendMessageUrl()
+    {
+        return SendMessageUrlFormat
+            .Replace("{key}", Key)
+            .Replace("{secret}", Secret)
+            .Replace("{sender}", Sender);
+    }
+
+    public virtual bool SendMessage(string number, string message)
+    {
+        try
+        {
+            var url = SendMessageUrl();
+            url = url.Replace("{phone}", number).Replace("{text}", HttpUtility.UrlEncode(message));
+
+            var request = new HttpRequestMessage();
+            request.RequestUri = new Uri(url);
+            request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+
+            using var httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromMilliseconds(15000);
+
+            using var response = httpClient.Send(request);
+            using var stream = response.Content.ReadAsStream();
+            if (stream != null)
+            {
+                using var reader = new StreamReader(stream);
+                var result = reader.ReadToEnd();
+                _log.InfoFormat("SMS was sent to {0}, service returned: {1}", number, result);
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.Error("Failed to send sms message", ex);
+        }
+        return false;
+    }
+}
+
+public class SmscProvider : SmsProvider, IValidateKeysProvider
+{
+    public SmscProvider()
+    {
+    }
+
+    public SmscProvider(
+        TenantManager tenantManager,
+        CoreBaseSettings coreBaseSettings,
+        CoreSettings coreSettings,
+        IConfiguration configuration,
+        ICacheNotify<ConsumerCacheItem> cache,
+        ConsumerFactory consumerFactory,
+        IOptionsMonitor<ILog> options,
+        ICache memCache,
+        string name, int order, Dictionary<string, string> props, Dictionary<string, string> additional = null)
+        : base(tenantManager, coreBaseSettings, coreSettings, configuration, cache, consumerFactory, options, memCache, name, order, props, additional)
+    {
+    }
+
+    protected override string SendMessageUrlFormat
+    {
+        get { return "https://smsc.ru/sys/send.php?login={key}&psw={secret}&phones={phone}&mes={text}&fmt=3&sender={sender}&charset=utf-8"; }
+        set { }
+    }
+
+    protected override string GetBalanceUrlFormat
+    {
+        get { return "https://smsc.ru/sys/balance.php?login={key}&psw={secret}"; }
+        set { }
+    }
+
+    protected override string Key
+    {
+        get { return this["smsclogin"]; }
+    }
+
+    protected override string Secret
+    {
+        get { return this["smscpsw"]; }
+    }
+
+    protected override string Sender
+    {
+        get { return this["smscsender"]; }
+    }
+
+    public override bool Enable()
+    {
+        return
+            !string.IsNullOrEmpty(Key)
+            && !string.IsNullOrEmpty(Secret);
+    }
+
+    public string GetBalance(Tenant tenant, bool eraseCache = false)
+    {
+        var tenantCache = tenant == null ? Tenant.DEFAULT_TENANT : tenant.TenantId;
+
+        var key = "sms/smsc/" + tenantCache;
+        if (eraseCache) _memoryCache.Remove(key);
+
+        var balance = _memoryCache.Get<string>(key);
+
+        if (string.IsNullOrEmpty(balance))
         {
             try
             {
-                var url = SendMessageUrl();
-                url = url.Replace("{phone}", number).Replace("{text}", HttpUtility.UrlEncode(message));
+                var url = GetBalanceUrl();
 
                 var request = new HttpRequestMessage();
                 request.RequestUri = new Uri(url);
                 request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
 
                 using var httpClient = new HttpClient();
-                httpClient.Timeout = TimeSpan.FromMilliseconds(15000);
+                httpClient.Timeout = TimeSpan.FromMilliseconds(1000);
 
                 using var response = httpClient.Send(request);
                 using var stream = response.Content.ReadAsStream();
@@ -181,372 +274,277 @@ namespace ASC.Web.Core.Sms
                 {
                     using var reader = new StreamReader(stream);
                     var result = reader.ReadToEnd();
-                    Log.InfoFormat("SMS was sent to {0}, service returned: {1}", number, result);
-                    return true;
+                    _log.InfoFormat("SMS balance service returned: {0}", result);
+
+                    balance = result;
                 }
             }
             catch (Exception ex)
             {
-                Log.Error("Failed to send sms message", ex);
-            }
-            return false;
-        }
-    }
-
-    public class SmscProvider : SmsProvider, IValidateKeysProvider
-    {
-        public SmscProvider()
-        {
-        }
-
-        public SmscProvider(
-            TenantManager tenantManager,
-            CoreBaseSettings coreBaseSettings,
-            CoreSettings coreSettings,
-            IConfiguration configuration,
-            ICacheNotify<ConsumerCacheItem> cache,
-            ConsumerFactory consumerFactory,
-            IOptionsMonitor<ILog> options,
-            ICache memCache,
-            string name, int order, Dictionary<string, string> props, Dictionary<string, string> additional = null)
-            : base(tenantManager, coreBaseSettings, coreSettings, configuration, cache, consumerFactory, options, memCache, name, order, props, additional)
-        {
-        }
-
-        protected override string SendMessageUrlFormat
-        {
-            get { return "https://smsc.ru/sys/send.php?login={key}&psw={secret}&phones={phone}&mes={text}&fmt=3&sender={sender}&charset=utf-8"; }
-            set { }
-        }
-
-        protected override string GetBalanceUrlFormat
-        {
-            get { return "https://smsc.ru/sys/balance.php?login={key}&psw={secret}"; }
-            set { }
-        }
-
-        protected override string Key
-        {
-            get { return this["smsclogin"]; }
-        }
-
-        protected override string Secret
-        {
-            get { return this["smscpsw"]; }
-        }
-
-        protected override string Sender
-        {
-            get { return this["smscsender"]; }
-        }
-
-        public override bool Enable()
-        {
-            return
-                !string.IsNullOrEmpty(Key)
-                && !string.IsNullOrEmpty(Secret);
-        }
-
-        public string GetBalance(Tenant tenant, bool eraseCache = false)
-        {
-            var tenantCache = tenant == null ? Tenant.DEFAULT_TENANT : tenant.TenantId;
-
-            var key = "sms/smsc/" + tenantCache;
-            if (eraseCache) MemoryCache.Remove(key);
-
-            var balance = MemoryCache.Get<string>(key);
-
-            if (string.IsNullOrEmpty(balance))
-            {
-                try
-                {
-                    var url = GetBalanceUrl();
-
-                    var request = new HttpRequestMessage();
-                    request.RequestUri = new Uri(url);
-                    request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-
-                    using var httpClient = new HttpClient();
-                    httpClient.Timeout = TimeSpan.FromMilliseconds(1000);
-
-                    using var response = httpClient.Send(request);
-                    using var stream = response.Content.ReadAsStream();
-                    if (stream != null)
-                    {
-                        using var reader = new StreamReader(stream);
-                        var result = reader.ReadToEnd();
-                        Log.InfoFormat("SMS balance service returned: {0}", result);
-
-                        balance = result;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("Failed request sms balance", ex);
-                    balance = string.Empty;
-                }
-
-                MemoryCache.Insert(key, balance, TimeSpan.FromMinutes(1));
+                _log.Error("Failed request sms balance", ex);
+                balance = string.Empty;
             }
 
-            return balance;
+            _memoryCache.Insert(key, balance, TimeSpan.FromMinutes(1));
         }
 
-        private string GetBalanceUrl()
-        {
-            return GetBalanceUrlFormat
-                .Replace("{key}", Key)
-                .Replace("{secret}", Secret);
-        }
-
-        public bool SuitableNumber(string number)
-        {
-            var smsCis = this["smsccis"];
-            return !string.IsNullOrEmpty(smsCis) && Regex.IsMatch(number, smsCis);
-        }
-
-        public bool ValidateKeys()
-        {
-            return double.TryParse(GetBalance(TenantManager.GetCurrentTenant(false), true), NumberStyles.Number, CultureInfo.InvariantCulture, out var balance) && balance > 0;
-        }
+        return balance;
     }
 
-    public class ClickatellProvider : SmsProvider
+    private string GetBalanceUrl()
     {
-        protected override string SendMessageUrlFormat
-        {
-            get { return "https://platform.clickatell.com/messages/http/send?apiKey={secret}&to={phone}&content={text}&from={sender}"; }
-            set { }
-        }
-
-        protected override string Secret
-        {
-            get { return this["clickatellapiKey"]; }
-            set { }
-        }
-
-        protected override string Sender
-        {
-            get { return this["clickatellSender"]; }
-            set { }
-        }
-
-        public override bool Enable()
-        {
-            return !string.IsNullOrEmpty(Secret);
-        }
-
-        public ClickatellProvider()
-        {
-        }
-
-        public ClickatellProvider(
-            TenantManager tenantManager,
-            CoreBaseSettings coreBaseSettings,
-            CoreSettings coreSettings,
-            IConfiguration configuration,
-            ICacheNotify<ConsumerCacheItem> cache,
-            ConsumerFactory consumerFactory,
-            IOptionsMonitor<ILog> options,
-            ICache memCache,
-            string name, int order, Dictionary<string, string> props, Dictionary<string, string> additional = null)
-            : base(tenantManager, coreBaseSettings, coreSettings, configuration, cache, consumerFactory, options, memCache, name, order, props, additional)
-        {
-        }
+        return GetBalanceUrlFormat
+            .Replace("{key}", Key)
+            .Replace("{secret}", Secret);
     }
 
-    public class ClickatellUSAProvider : ClickatellProvider
+    public bool SuitableNumber(string number)
     {
-        public ClickatellUSAProvider()
-        {
-        }
-
-        public ClickatellUSAProvider(
-            TenantManager tenantManager,
-            CoreBaseSettings coreBaseSettings,
-            CoreSettings coreSettings,
-            IConfiguration configuration,
-            ICacheNotify<ConsumerCacheItem> cache,
-            ConsumerFactory consumerFactory,
-            IOptionsMonitor<ILog> options,
-            ICache memCache,
-            string name, int order, Dictionary<string, string> additional = null)
-            : base(tenantManager, coreBaseSettings, coreSettings, configuration, cache, consumerFactory, options, memCache, name, order, null, additional)
-        {
-        }
+        var smsCis = this["smsccis"];
+        return !string.IsNullOrEmpty(smsCis) && Regex.IsMatch(number, smsCis);
     }
 
-    [Scope]
-    public class TwilioProvider : SmsProvider, IValidateKeysProvider
+    public bool ValidateKeys()
     {
-        protected override string Key
+        return double.TryParse(GetBalance(TenantManager.GetCurrentTenant(false), true), NumberStyles.Number, CultureInfo.InvariantCulture, out var balance) && balance > 0;
+    }
+}
+
+public class ClickatellProvider : SmsProvider
+{
+    protected override string SendMessageUrlFormat
+    {
+        get { return "https://platform.clickatell.com/messages/http/send?apiKey={secret}&to={phone}&content={text}&from={sender}"; }
+        set { }
+    }
+
+    protected override string Secret
+    {
+        get { return this["clickatellapiKey"]; }
+        set { }
+    }
+
+    protected override string Sender
+    {
+        get { return this["clickatellSender"]; }
+        set { }
+    }
+
+    public override bool Enable()
+    {
+        return !string.IsNullOrEmpty(Secret);
+    }
+
+    public ClickatellProvider()
+    {
+    }
+
+    public ClickatellProvider(
+        TenantManager tenantManager,
+        CoreBaseSettings coreBaseSettings,
+        CoreSettings coreSettings,
+        IConfiguration configuration,
+        ICacheNotify<ConsumerCacheItem> cache,
+        ConsumerFactory consumerFactory,
+        IOptionsMonitor<ILog> options,
+        ICache memCache,
+        string name, int order, Dictionary<string, string> props, Dictionary<string, string> additional = null)
+        : base(tenantManager, coreBaseSettings, coreSettings, configuration, cache, consumerFactory, options, memCache, name, order, props, additional)
+    {
+    }
+}
+
+public class ClickatellUSAProvider : ClickatellProvider
+{
+    public ClickatellUSAProvider()
+    {
+    }
+
+    public ClickatellUSAProvider(
+        TenantManager tenantManager,
+        CoreBaseSettings coreBaseSettings,
+        CoreSettings coreSettings,
+        IConfiguration configuration,
+        ICacheNotify<ConsumerCacheItem> cache,
+        ConsumerFactory consumerFactory,
+        IOptionsMonitor<ILog> options,
+        ICache memCache,
+        string name, int order, Dictionary<string, string> additional = null)
+        : base(tenantManager, coreBaseSettings, coreSettings, configuration, cache, consumerFactory, options, memCache, name, order, null, additional)
+    {
+    }
+}
+
+[Scope]
+public class TwilioProvider : SmsProvider, IValidateKeysProvider
+{
+    protected override string Key
+    {
+        get { return this["twilioAccountSid"]; }
+        set { }
+    }
+
+    protected override string Secret
+    {
+        get { return this["twilioAuthToken"]; }
+        set { }
+    }
+
+    protected override string Sender
+    {
+        get { return this["twiliosender"]; }
+        set { }
+    }
+
+    private readonly AuthContext _authContext;
+    private readonly TenantUtil _tenantUtil;
+    private readonly SecurityContext _securityContext;
+    private readonly BaseCommonLinkUtility _baseCommonLinkUtility;
+    private readonly TwilioProviderCleaner _twilioProviderCleaner;
+
+    public override bool Enable()
+    {
+        return
+            !string.IsNullOrEmpty(Key)
+            && !string.IsNullOrEmpty(Secret)
+            && !string.IsNullOrEmpty(Sender);
+    }
+
+    public override bool SendMessage(string number, string message)
+    {
+        if (!number.StartsWith("+")) number = "+" + number;
+        var twilioRestClient = new TwilioRestClient(Key, Secret);
+
+        try
         {
-            get { return this["twilioAccountSid"]; }
-            set { }
-        }
-
-        protected override string Secret
-        {
-            get { return this["twilioAuthToken"]; }
-            set { }
-        }
-
-        protected override string Sender
-        {
-            get { return this["twiliosender"]; }
-            set { }
-        }
-
-        public AuthContext AuthContext { get; }
-        public TenantUtil TenantUtil { get; }
-        public SecurityContext SecurityContext { get; }
-        public BaseCommonLinkUtility BaseCommonLinkUtility { get; }
-        public TwilioProviderCleaner TwilioProviderCleaner { get; }
-
-        public override bool Enable()
-        {
-            return
-                !string.IsNullOrEmpty(Key)
-                && !string.IsNullOrEmpty(Secret)
-                && !string.IsNullOrEmpty(Sender);
-        }
-
-        public override bool SendMessage(string number, string message)
-        {
-            if (!number.StartsWith("+")) number = "+" + number;
-            var twilioRestClient = new TwilioRestClient(Key, Secret);
-
-            try
+            var smsMessage = MessageResource.Create(new PhoneNumber(number), body: message, @from: new PhoneNumber(Sender), client: twilioRestClient);
+            _log.InfoFormat("SMS was sent to {0}, status: {1}", number, smsMessage.Status);
+            if (!smsMessage.ErrorCode.HasValue)
             {
-                var smsMessage = MessageResource.Create(new PhoneNumber(number), body: message, @from: new PhoneNumber(Sender), client: twilioRestClient);
-                Log.InfoFormat("SMS was sent to {0}, status: {1}", number, smsMessage.Status);
-                if (!smsMessage.ErrorCode.HasValue)
-                {
-                    return true;
-                }
-                Log.Error("Failed to send sms. code: " + smsMessage.ErrorCode.Value + " message: " + smsMessage.ErrorMessage);
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Failed to send sms message via tiwilio", ex);
-            }
-
-            return false;
-        }
-
-        public TwilioProvider()
-        {
-        }
-
-        public TwilioProvider(
-            AuthContext authContext,
-            TenantUtil tenantUtil,
-            SecurityContext securityContext,
-            BaseCommonLinkUtility baseCommonLinkUtility,
-            TwilioProviderCleaner twilioProviderCleaner,
-            TenantManager tenantManager,
-            CoreBaseSettings coreBaseSettings,
-            CoreSettings coreSettings,
-            IConfiguration configuration,
-            ICacheNotify<ConsumerCacheItem> cache,
-            ConsumerFactory consumerFactory,
-            IOptionsMonitor<ILog> options,
-            ICache memCache,
-            string name, int order, Dictionary<string, string> props)
-            : base(tenantManager, coreBaseSettings, coreSettings, configuration, cache, consumerFactory, options, memCache, name, order, props)
-        {
-            AuthContext = authContext;
-            TenantUtil = tenantUtil;
-            SecurityContext = securityContext;
-            BaseCommonLinkUtility = baseCommonLinkUtility;
-            TwilioProviderCleaner = twilioProviderCleaner;
-        }
-
-
-        public bool ValidateKeys()
-        {
-            try
-            {
-                new VoipService.Twilio.TwilioProvider(Key, Secret, AuthContext, TenantUtil, SecurityContext, BaseCommonLinkUtility).GetExistingPhoneNumbers();
                 return true;
             }
-            catch (Exception)
-            {
-                return false;
-            }
+            _log.Error("Failed to send sms. code: " + smsMessage.ErrorCode.Value + " message: " + smsMessage.ErrorMessage);
+        }
+        catch (Exception ex)
+        {
+            _log.Error("Failed to send sms message via tiwilio", ex);
         }
 
-        public void ClearOldNumbers()
+        return false;
+    }
+
+    public TwilioProvider()
+    {
+    }
+
+    public TwilioProvider(
+        AuthContext authContext,
+        TenantUtil tenantUtil,
+        SecurityContext securityContext,
+        BaseCommonLinkUtility baseCommonLinkUtility,
+        TwilioProviderCleaner twilioProviderCleaner,
+        TenantManager tenantManager,
+        CoreBaseSettings coreBaseSettings,
+        CoreSettings coreSettings,
+        IConfiguration configuration,
+        ICacheNotify<ConsumerCacheItem> cache,
+        ConsumerFactory consumerFactory,
+        IOptionsMonitor<ILog> options,
+        ICache memCache,
+        string name, int order, Dictionary<string, string> props)
+        : base(tenantManager, coreBaseSettings, coreSettings, configuration, cache, consumerFactory, options, memCache, name, order, props)
+    {
+        _authContext = authContext;
+        _tenantUtil = tenantUtil;
+        _securityContext = securityContext;
+        _baseCommonLinkUtility = baseCommonLinkUtility;
+        _twilioProviderCleaner = twilioProviderCleaner;
+    }
+
+
+    public bool ValidateKeys()
+    {
+        try
         {
-            TwilioProviderCleaner.ClearOldNumbers(Key, Secret);
+            new VoipService.Twilio.TwilioProvider(Key, Secret, _authContext, _tenantUtil, _securityContext, _baseCommonLinkUtility).GetExistingPhoneNumbers();
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 
-    [Scope]
-    public class TwilioSaaSProvider : TwilioProvider
+    public void ClearOldNumbers()
     {
-        public TwilioSaaSProvider()
-        {
-        }
+        _twilioProviderCleaner.ClearOldNumbers(Key, Secret);
+    }
+}
 
-        public TwilioSaaSProvider(
-            AuthContext authContext,
-            TenantUtil tenantUtil,
-            SecurityContext securityContext,
-            BaseCommonLinkUtility baseCommonLinkUtility,
-            TwilioProviderCleaner twilioProviderCleaner,
-            TenantManager tenantManager,
-            CoreBaseSettings coreBaseSettings,
-            CoreSettings coreSettings,
-            IConfiguration configuration,
-            ICacheNotify<ConsumerCacheItem> cache,
-            ConsumerFactory consumerFactory,
-            IOptionsMonitor<ILog> options,
-            ICache memCache,
-            string name, int order)
-            : base(authContext, tenantUtil, securityContext, baseCommonLinkUtility, twilioProviderCleaner, tenantManager, coreBaseSettings, coreSettings, configuration, cache, consumerFactory, options, memCache, name, order, null)
-        {
-        }
+[Scope]
+public class TwilioSaaSProvider : TwilioProvider
+{
+    public TwilioSaaSProvider()
+    {
     }
 
-    [Scope]
-    public class TwilioProviderCleaner
+    public TwilioSaaSProvider(
+        AuthContext authContext,
+        TenantUtil tenantUtil,
+        SecurityContext securityContext,
+        BaseCommonLinkUtility baseCommonLinkUtility,
+        TwilioProviderCleaner twilioProviderCleaner,
+        TenantManager tenantManager,
+        CoreBaseSettings coreBaseSettings,
+        CoreSettings coreSettings,
+        IConfiguration configuration,
+        ICacheNotify<ConsumerCacheItem> cache,
+        ConsumerFactory consumerFactory,
+        IOptionsMonitor<ILog> options,
+        ICache memCache,
+        string name, int order)
+        : base(authContext, tenantUtil, securityContext, baseCommonLinkUtility, twilioProviderCleaner, tenantManager, coreBaseSettings, coreSettings, configuration, cache, consumerFactory, options, memCache, name, order, null)
     {
-        private VoipDao VoipDao { get; }
-        private AuthContext AuthContext { get; }
-        private TenantUtil TenantUtil { get; }
-        private SecurityContext SecurityContext { get; }
-        private BaseCommonLinkUtility BaseCommonLinkUtility { get; }
+    }
+}
 
-        public TwilioProviderCleaner(VoipDao voipDao, AuthContext authContext, TenantUtil tenantUtil, SecurityContext securityContext, BaseCommonLinkUtility baseCommonLinkUtility)
-        {
-            VoipDao = voipDao;
-            AuthContext = authContext;
-            TenantUtil = tenantUtil;
-            SecurityContext = securityContext;
-            BaseCommonLinkUtility = baseCommonLinkUtility;
-        }
+[Scope]
+public class TwilioProviderCleaner
+{
+    private readonly VoipDao _voipDao;
+    private readonly AuthContext _authContext;
+    private readonly TenantUtil _tenantUtil;
+    private readonly SecurityContext _securityContext;
+    private readonly BaseCommonLinkUtility _baseCommonLinkUtility;
 
-        public void ClearOldNumbers(string key, string secret)
-        {
-            if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(secret)) return;
-
-            var provider = new VoipService.Twilio.TwilioProvider(key, secret, AuthContext, TenantUtil, SecurityContext, BaseCommonLinkUtility);
-
-            var numbers = VoipDao.GetNumbers();
-            foreach (var number in numbers)
-            {
-                provider.DisablePhone(number);
-                VoipDao.DeleteNumber(number.Id);
-            }
-        }
+    public TwilioProviderCleaner(VoipDao voipDao, AuthContext authContext, TenantUtil tenantUtil, SecurityContext securityContext, BaseCommonLinkUtility baseCommonLinkUtility)
+    {
+        _voipDao = voipDao;
+        _authContext = authContext;
+        _tenantUtil = tenantUtil;
+        _securityContext = securityContext;
+        _baseCommonLinkUtility = baseCommonLinkUtility;
     }
 
-    public static class TwilioProviderExtention
+    public void ClearOldNumbers(string key, string secret)
     {
-        public static void Register(DIHelper services)
+        if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(secret)) return;
+
+        var provider = new VoipService.Twilio.TwilioProvider(key, secret, _authContext, _tenantUtil, _securityContext, _baseCommonLinkUtility);
+
+        var numbers = _voipDao.GetNumbers();
+        foreach (var number in numbers)
         {
-            services.TryAdd<TwilioSaaSProvider>();
+            provider.DisablePhone(number);
+            _voipDao.DeleteNumber(number.Id);
         }
+    }
+}
+
+public static class TwilioProviderExtention
+{
+    public static void Register(DIHelper services)
+    {
+        services.TryAdd<TwilioSaaSProvider>();
     }
 }
