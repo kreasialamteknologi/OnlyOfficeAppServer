@@ -102,7 +102,7 @@ namespace ASC.ActiveDirectory
         }
 
 
-        protected LdapOperation(LdapSettings settings, Tenant tenant, LdapOperationType operationType,  LdapLocalization resource = null)
+        protected LdapOperation(LdapSettings settings, Tenant tenant, LdapOperationType operationType, IServiceProvider serviceProvider, LdapLocalization resource = null)
         {
             CurrentTenant = tenant;
 
@@ -123,25 +123,36 @@ namespace ASC.ActiveDirectory
 
             Resource = resource ?? new LdapLocalization();
 
-            LDAPUserManager = new LdapUserManager(Resource);
+            ServiceProvider = serviceProvider;
+
+            LDAPUserManager = new LdapUserManager(ServiceProvider, Resource);
+
+            
         }
 
-
+        
+        
 
         public void RunJob(DistributedTask _, CancellationToken cancellationToken)
         {
+            using var scope = ServiceProvider.CreateScope();
+            var ten = scope.ServiceProvider.GetService<TenantManager>();
+            var sec = scope.ServiceProvider.GetService<SecurityContext>();
+
             try
             {
                 CancellationToken = cancellationToken;
                  
-                using var scope = ServiceProvider.CreateScope();
+                
                 var scopeClass = scope.ServiceProvider.GetService<LdapOperationScope>();
 
-                var (tenantManager, usermanager, coreBaseSettings) = scopeClass;
+                
 
-                TenantManager.SetCurrentTenant(tenantManager.GetCurrentTenant());
+                //var (tenantManager, usermanager, coreBaseSettings, settingsManager, userFormatter, webItemSecurity, userPhotoManager) = scopeClass;
 
-                SecurityContext.AuthenticateMe(Core.Configuration.Constants.CoreSystem);
+                ten.SetCurrentTenant(CurrentTenant);
+
+                sec.AuthenticateMe(Core.Configuration.Constants.CoreSystem);
 
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo(_culture);
                 Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo(_culture);
@@ -175,7 +186,7 @@ namespace ASC.ActiveDirectory
                             return;
                         }
 
-                        Importer = new NovellLdapUserImporter(LDAPSettings, Resource);
+                        Importer = new NovellLdapUserImporter(LDAPSettings, Resource, ServiceProvider);
 
                         if (LDAPSettings.EnableLdapAuthentication)
                         {
@@ -207,7 +218,7 @@ namespace ASC.ActiveDirectory
                         //Logger.InfoFormat("Start '{0}' operation",
                           //  Enum.GetName(typeof(LdapOperationType), OperationType));
 
-                        Importer = new NovellLdapUserImporter(LDAPSettings, Resource);
+                        Importer = new NovellLdapUserImporter(LDAPSettings, Resource, ServiceProvider);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -246,7 +257,7 @@ namespace ASC.ActiveDirectory
                     TaskInfo.SetProperty(FINISHED, true);
                     PublishTaskInfo();
                     Dispose();
-                    SecurityContext.Logout();
+                    sec.Logout();
                 }
                 catch (Exception ex)
                 {
@@ -422,7 +433,9 @@ namespace ASC.ActiveDirectory
             {
                 if (!string.IsNullOrEmpty(settings.Password))
                 {
-                    settings.PasswordBytes = LdapHelper.GetPasswordBytes(settings.Password);
+                    using var scope = ServiceProvider.CreateScope();
+                    var helper = scope.ServiceProvider.GetService<LdapHelper>();
+                    settings.PasswordBytes = helper.GetPasswordBytes(settings.Password);
 
                     if (settings.PasswordBytes == null)
                     {

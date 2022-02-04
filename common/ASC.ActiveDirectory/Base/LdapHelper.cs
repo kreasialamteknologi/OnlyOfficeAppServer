@@ -23,27 +23,34 @@ using System.Text;
 using ASC.ActiveDirectory.Base.Data;
 using ASC.ActiveDirectory.Base.Expressions;
 using ASC.ActiveDirectory.Base.Settings;
+using ASC.Common;
 using ASC.Common.Logging;
 using ASC.Security.Cryptography;
 
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace ASC.ActiveDirectory.Base
 {
+    [Scope]
     public abstract class LdapHelper : IDisposable
     {
         public LdapSettings Settings { get; private set; }
 
-        private static InstanceCrypto InstanceCrypto { get; }
+
+        private InstanceCrypto InstanceCrypto { get; }
+
+        private IServiceProvider ServiceProvider { get;}
         public abstract bool IsConnected { get; }
 
         private IOptionsMonitor<ILog> option;
         protected readonly ILog Log;
 
-        protected LdapHelper(LdapSettings settings)
+        protected LdapHelper(LdapSettings settings, IServiceProvider serviceProvider)
         {
             Settings = settings;
             Log = option.Get("ASC");
+            ServiceProvider = serviceProvider;
         }
 
         public abstract void Connect();
@@ -107,7 +114,7 @@ namespace ASC.ActiveDirectory.Base
             return false;
         }
 
-        public static string GetPassword(byte[] passwordBytes)
+        public string GetPassword(byte[] passwordBytes)
         {
             if (passwordBytes == null || passwordBytes.Length == 0)
                 return string.Empty;
@@ -115,7 +122,9 @@ namespace ASC.ActiveDirectory.Base
             string password;
             try
             {
-                password = InstanceCrypto.Decrypt(passwordBytes);
+                using var scope = ServiceProvider.CreateScope();
+                var instanceCrypto = scope.ServiceProvider.GetService<InstanceCrypto>();
+                password = instanceCrypto.Decrypt(passwordBytes);
             }
             catch (Exception)
             {
@@ -124,13 +133,15 @@ namespace ASC.ActiveDirectory.Base
             return password;
         }
 
-        public static byte[] GetPasswordBytes(string password)
+        public byte[] GetPasswordBytes(string password)
         {
             byte[] passwordBytes;
 
             try
             {
-                passwordBytes = InstanceCrypto.Encrypt(new UnicodeEncoding().GetBytes(password));
+                using var scope = ServiceProvider.CreateScope();
+                var instanceCrypto = scope.ServiceProvider.GetService<InstanceCrypto>();
+                passwordBytes = instanceCrypto.Encrypt(new UnicodeEncoding().GetBytes(password));
             }
             catch (Exception)
             {
