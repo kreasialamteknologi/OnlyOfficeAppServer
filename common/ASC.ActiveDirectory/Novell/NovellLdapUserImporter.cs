@@ -23,8 +23,8 @@ namespace ASC.ActiveDirectory.Novell
 {
     public class NovellLdapUserImporter : LdapUserImporter
     {
-        public NovellLdapUserImporter(LdapSettings settings, LdapLocalization resource)
-            : base(new NovellLdapHelper(settings), resource)
+        public NovellLdapUserImporter(LdapSettings settings, LdapLocalization resource, IServiceProvider serviceProvider)
+            : base(new NovellLdapHelper(settings, serviceProvider), resource)
         {
         }
     }

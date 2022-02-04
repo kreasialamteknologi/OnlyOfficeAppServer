@@ -179,6 +179,8 @@ namespace ASC.Api.Settings
         public Constants Constants { get; }
         private ICache Cache { get; }
         private SecurityContext SecurityContext { get; }
+        private UserFormatter UserFormatter { get; }
+        private UserPhotoManager UserPhotoManager { get; }
 
         public SettingsController(
             IOptionsMonitor<ILog> option,
@@ -244,7 +246,9 @@ namespace ASC.Api.Settings
             Constants constants,
             DistributedTaskQueueOptionsManager DistributedTaskQueueOptionsManager,
             ICache cache,
-            SecurityContext securityContext)
+            SecurityContext securityContext,
+            UserFormatter userFormatter,
+            UserPhotoManager userPhotoManager)
         {
             Log = option.Get("ASC.Api");
             WebHostEnvironment = webHostEnvironment;
@@ -310,6 +314,8 @@ namespace ASC.Api.Settings
             ldapTasks = DistributedTaskQueueOptionsManager.Get<LdapOperation>();
             Cache = cache;
             SecurityContext = securityContext;
+            UserFormatter = userFormatter;
+            UserPhotoManager = userPhotoManager;
         }
 
         [Read("", Check = false)]

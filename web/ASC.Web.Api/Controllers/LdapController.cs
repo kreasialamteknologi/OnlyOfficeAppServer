@@ -21,7 +21,7 @@ using ASC.Web.Core.PublicResources;
 using ASC.Web.Studio.Core;
 using ASC.Web.Studio.Utility;
 
-
+using Microsoft.Extensions.DependencyInjection;
 
 using Newtonsoft.Json;
 using HttpContext = Microsoft.AspNetCore.Http.HttpContext;
@@ -210,7 +210,7 @@ namespace ASC.Api.Settings
 
                 Cache.Insert("REWRITE_URL" + tenant.TenantId, HttpContext.Request.GetUrlRewriter().ToString(), TimeSpan.FromMinutes(5));
 
-                var op = new LdapSaveSyncOperation(ldapSettings, tenant, LdapOperationType.Sync, ldapLocalization, user);
+                var op = new LdapSaveSyncOperation(ldapSettings, tenant, LdapOperationType.Sync, ServiceProvider,  ldapLocalization, user);
 
                 return QueueTask(op);
             }
@@ -258,7 +258,7 @@ namespace ASC.Api.Settings
 
                 Cache.Insert("REWRITE_URL" + tenant.TenantId, HttpContext.Request.GetUrlRewriter().ToString(), TimeSpan.FromMinutes(5));
 
-                var op = new LdapSaveSyncOperation(ldapSettings, tenant, LdapOperationType.SyncTest, ldapLocalization);
+                var op = new LdapSaveSyncOperation(ldapSettings, tenant, LdapOperationType.SyncTest, ServiceProvider , ldapLocalization);
 
                 return QueueTask(op);
             }
@@ -310,7 +310,10 @@ namespace ASC.Api.Settings
 
                 Cache.Insert("REWRITE_URL" + tenant.TenantId, HttpContext.Request.GetUrlRewriter().ToString(), TimeSpan.FromMinutes(5));
 
-                var op = new LdapSaveSyncOperation(ldapSettings, tenant, LdapOperationType.Save, ldapLocalization, user);
+                var scope = ServiceProvider.CreateScope();
+                var scopeClass = scope.ServiceProvider.GetService<LdapOperation>();
+                //scopeClass.Init(TenantManager, UserManager, CoreBaseSettings, SettingsManager, UserFormatter, WebItemSecurity, UserPhotoManager);
+                var op = new LdapSaveSyncOperation(ldapSettings, tenant, LdapOperationType.Save, ServiceProvider, ldapLocalization, user);
 
                 return QueueTask(op);
             }
@@ -363,7 +366,7 @@ namespace ASC.Api.Settings
 
                 Cache.Insert("REWRITE_URL" + tenant.TenantId, HttpContext.Request.GetUrlRewriter().ToString(), TimeSpan.FromMinutes(5));
 
-                var op = new LdapSaveSyncOperation(ldapSettings, tenant, LdapOperationType.SaveTest, ldapLocalization, user);
+                var op = new LdapSaveSyncOperation(ldapSettings, tenant, LdapOperationType.SaveTest, ServiceProvider, ldapLocalization, user);
 
                 return QueueTask(op);
             }

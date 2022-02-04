@@ -31,8 +31,8 @@ namespace ASC.ActiveDirectory.Novell
     {
         public NovellLdapSearcher LDAPSearcher { get; private set; }
 
-        public NovellLdapHelper(LdapSettings settings) :
-            base(settings)
+        public NovellLdapHelper(LdapSettings settings, IServiceProvider serviceProvider) :
+            base(settings, serviceProvider)
         {
             var password = string.IsNullOrEmpty(settings.Password)
                 ? GetPassword(settings.PasswordBytes)

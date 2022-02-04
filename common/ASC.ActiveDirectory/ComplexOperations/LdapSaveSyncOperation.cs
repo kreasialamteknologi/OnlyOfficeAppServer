@@ -44,8 +44,9 @@ namespace ASC.ActiveDirectory.ComplexOperations
     {
         private readonly LdapChangeCollection _ldapChanges;
         private readonly UserInfo? _currentUser;
-        public LdapSaveSyncOperation(LdapSettings settings, Tenant tenant, LdapOperationType operation, LdapLocalization resource = null, UserInfo user = null)
-            : base(settings, tenant, operation, resource)
+
+        public LdapSaveSyncOperation(LdapSettings settings, Tenant tenant, LdapOperationType operation, IServiceProvider serviceProvider = null , LdapLocalization resource = null, UserInfo user = null)
+            : base(settings, tenant, operation, serviceProvider , resource)
         {
             _ldapChanges = new LdapChangeCollection { Tenant = tenant };
             _currentUser = user;

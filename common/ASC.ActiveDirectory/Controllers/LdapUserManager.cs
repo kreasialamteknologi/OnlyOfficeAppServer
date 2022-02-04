@@ -45,6 +45,8 @@ namespace ASC.ActiveDirectory
     public class LdapUserManager
     {
         private readonly ILog _log;
+
+        private IServiceProvider ServiceProvider;
         private static UserManager UserManager { get; }
         private TenantManager TenantManager { get; set;  }
         public LdapLocalization Resource { get; private set; }
@@ -54,8 +56,9 @@ namespace ASC.ActiveDirectory
         private TenantUtil TenantUtil { get; set; }
         private CommonLinkUtility CommonLinkUtility { get; set; }
         private DisplayUserSettingsHelper DisplayUserSettingsHelper { get; }
-        public LdapUserManager(LdapLocalization resource = null)
+        public LdapUserManager(IServiceProvider serviceProvider, LdapLocalization resource = null)
         {
+            ServiceProvider = serviceProvider;
             Resource = resource ?? new LdapLocalization();
         }
 
@@ -565,7 +568,7 @@ namespace ASC.ActiveDirectory
 
                 _log.DebugFormat("TryGetAndSyncLdapUserInfo(login: \"{0}\")", login);
 
-                importer = new NovellLdapUserImporter(settings, Resource);
+                importer = new NovellLdapUserImporter(settings, Resource, ServiceProvider);
 
                 var ldapUserInfo = importer.Login(login, password);
 
